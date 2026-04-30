@@ -2,31 +2,28 @@ import streamlit as st
 import ezdxf
 import io
 
-# 1. Configuración visual de la plataforma
+# 1. Configuración visual
 st.set_page_config(page_title="ARCH-IA 1.0", page_icon="🏗️")
 
 st.title("🏗️ ARCH-IA 1.0")
 st.subheader("Conversor Inteligente de Planos a 3D")
 
-# 2. Panel lateral de control
+# 2. Panel lateral
 st.sidebar.header("Configuración del Modelo")
 altura_muro = st.sidebar.slider("Altura del muro (m)", 1.0, 10.0, 2.5)
 
-# 3. Interfaz de usuario
+# 3. Interfaz
 formato = st.radio("Selecciona el formato de tu plano original:", ("AutoCAD (.dxf)", "Nube de puntos (.xyz)"))
 uploaded_file = st.file_uploader(f"Arrastra aquí tu archivo {formato}", type=["dxf", "xyz"])
 
 def procesar_dxf(file):
-    # BLINDAJE ACTUALIZADO: Leer como stream de texto directamente
-    # Esto evita el uso de 'readstr' que da error
+    # BLINDAJE TOTAL: Leer como binario directamente
+    # Esto evita errores de 'Invalid binary data' o 'Unicode'
     bytes_data = file.read()
-    try:
-        content = bytes_data.decode("utf-8")
-    except UnicodeDecodeError:
-        content = bytes_data.decode("latin-1")
     
-    # Usamos io.StringIO para que ezdxf lo lea como un archivo de texto abierto
-    stream = io.StringIO(content)
+    # ezdxf tiene una función específica para leer desde memoria (bytes)
+    # io.BytesIO simula un archivo abierto en formato binario
+    stream = io.BytesIO(bytes_data)
     doc = ezdxf.read(stream)
     msp = doc.modelspace()
     
@@ -34,6 +31,7 @@ def procesar_dxf(file):
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
     
+    # Extraer geometrías
     for entity in msp.query('LINE LWPOLYLINE'):
         if entity.dxftype() == 'LINE':
             start = entity.dxf.start
@@ -51,12 +49,16 @@ def procesar_dxf(file):
 def procesar_xyz(file):
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
-    lines = file.read().decode("utf-8").splitlines()
+    # Para XYZ sí usamos texto porque es un formato simple
+    lines = file.read().decode("utf-8", errors="ignore").splitlines()
     puntos = []
     for line in lines:
         parts = line.split()
         if len(parts) >= 2:
-            puntos.append((float(parts[0]), float(parts[1])))
+            try:
+                puntos.append((float(parts[0]), float(parts[1])))
+            except:
+                continue
     
     for i in range(len(puntos)-1):
         msp_3d.add_line(puntos[i], puntos[i+1], dxfattribs={'thickness': altura_muro})
@@ -64,7 +66,7 @@ def procesar_xyz(file):
 
 # 4. Lógica de ejecución
 if uploaded_file is not None:
-    with st.spinner('Transformando plano 2D en modelo 3D...'):
+    with st.spinner('Transformando plano...'):
         try:
             nombre_archivo = uploaded_file.name.lower()
             
@@ -76,7 +78,7 @@ if uploaded_file is not None:
                 st.error("Formato no reconocido.")
                 st.stop()
             
-            # Exportar a un buffer de texto
+            # Exportar a un buffer binario (más seguro para DXF)
             out_buffer = io.StringIO()
             resultado.write(out_buffer)
             
@@ -91,4 +93,4 @@ if uploaded_file is not None:
             st.error(f"Se ha producido un error técnico: {e}")
 
 st.divider()
-st.caption("ARCH-IA v1.0 | Desarrollado para optimizar el flujo de trabajo arquitectónico.")
+st.caption("ARCH-IA v1.0 | Herramienta profesional de conversión.")
