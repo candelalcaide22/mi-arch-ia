@@ -17,21 +17,21 @@ formato = st.radio("Selecciona el formato de tu plano original:", ("AutoCAD (.dx
 uploaded_file = st.file_uploader(f"Arrastra aquí tu archivo {formato}", type=["dxf", "xyz"])
 
 def procesar_dxf(file):
-    # BLINDAJE TOTAL: Leer como binario directamente
-    # Esto evita errores de 'Invalid binary data' o 'Unicode'
+    # LEER COMO BYTES (Datos binarios puros)
     bytes_data = file.read()
     
-    # ezdxf tiene una función específica para leer desde memoria (bytes)
-    # io.BytesIO simula un archivo abierto en formato binario
+    # Crear el stream binario
     stream = io.BytesIO(bytes_data)
+    
+    # Cargar el documento DXF directamente desde los bytes
     doc = ezdxf.read(stream)
     msp = doc.modelspace()
     
-    # Crear el lienzo 3D
+    # Crear el nuevo lienzo 3D
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
     
-    # Extraer geometrías
+    # Extraer y extruir
     for entity in msp.query('LINE LWPOLYLINE'):
         if entity.dxftype() == 'LINE':
             start = entity.dxf.start
@@ -42,6 +42,7 @@ def procesar_dxf(file):
             for i in range(len(points)-1):
                 p1 = points[i]
                 p2 = points[i+1]
+                # Usamos solo X e Y para asegurar la base plana antes de extruir
                 msp_3d.add_line(p1[:2], p2[:2], dxfattribs={'thickness': altura_muro})
     
     return doc_3d
@@ -49,7 +50,7 @@ def procesar_dxf(file):
 def procesar_xyz(file):
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
-    # Para XYZ sí usamos texto porque es un formato simple
+    # Para XYZ leemos como texto normal
     lines = file.read().decode("utf-8", errors="ignore").splitlines()
     puntos = []
     for line in lines:
@@ -78,7 +79,8 @@ if uploaded_file is not None:
                 st.error("Formato no reconocido.")
                 st.stop()
             
-            # Exportar a un buffer binario (más seguro para DXF)
+            # EXPORTACIÓN FINAL
+            # Generamos el DXF de salida como una cadena de texto para la descarga
             out_buffer = io.StringIO()
             resultado.write(out_buffer)
             
