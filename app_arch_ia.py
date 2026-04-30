@@ -2,47 +2,53 @@ import streamlit as st
 import ezdxf
 import io
 
-# 1. Configuración visual
+# Configuración de la interfaz
 st.set_page_config(page_title="ARCH-IA 1.0", page_icon="🏗️")
-
 st.title("🏗️ ARCH-IA 1.0")
 st.subheader("Conversor Inteligente de Planos a 3D")
 
-# 2. Panel lateral
+# Parámetros laterales
 st.sidebar.header("Configuración del Modelo")
 altura_muro = st.sidebar.slider("Altura del muro (m)", 1.0, 10.0, 2.5)
 
-# 3. Interfaz
+# Selección de formato
 formato = st.radio("Selecciona el formato de tu plano original:", ("AutoCAD (.dxf)", "Nube de puntos (.xyz)"))
-uploaded_file = st.file_uploader(f"Arrastra aquí tu archivo {formato}", type=["dxf", "xyz"])
+uploaded_file = st.file_uploader(f"Sube tu archivo {formato}", type=["dxf", "xyz"])
 
 def procesar_dxf(file):
-    # LEER COMO BYTES (Datos binarios puros)
-    bytes_data = file.read()
+    # Paso 1: Leer el archivo como bytes puros
+    blob = file.read()
     
-    # Crear el stream binario
-    stream = io.BytesIO(bytes_data)
+    # Paso 2: Intentar cargarlo directamente desde los bytes
+    # io.BytesIO crea un "archivo virtual" que ezdxf entiende perfectamente
+    stream = io.BytesIO(blob)
     
-    # Cargar el documento DXF directamente desde los bytes
-    doc = ezdxf.read(stream)
+    try:
+        doc = ezdxf.read(stream)
+    except Exception:
+        # Si falla (a veces pasa con versiones raras), intentamos forzar la lectura
+        stream.seek(0)
+        content = blob.decode('utf-8', errors='ignore')
+        doc = ezdxf.readstr(content)
+        
     msp = doc.modelspace()
     
-    # Crear el nuevo lienzo 3D
+    # Crear el nuevo documento 3D
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
     
-    # Extraer y extruir
+    # Recorrer líneas y polilíneas
     for entity in msp.query('LINE LWPOLYLINE'):
         if entity.dxftype() == 'LINE':
             start = entity.dxf.start
             end = entity.dxf.end
+            # El truco de la "thickness" es lo que crea el muro 3D
             msp_3d.add_line(start, end, dxfattribs={'thickness': altura_muro})
         elif entity.dxftype() == 'LWPOLYLINE':
             points = entity.get_points()
             for i in range(len(points)-1):
                 p1 = points[i]
                 p2 = points[i+1]
-                # Aseguramos la base plana antes de extruir
                 msp_3d.add_line(p1[:2], p2[:2], dxfattribs={'thickness': altura_muro})
     
     return doc_3d
@@ -50,10 +56,10 @@ def procesar_dxf(file):
 def procesar_xyz(file):
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
-    # Para XYZ leemos como texto normal con manejo de errores
-    lines = file.read().decode("utf-8", errors="ignore").splitlines()
+    # Leer puntos ignorando errores de texto
+    content = file.read().decode("utf-8", errors="ignore").splitlines()
     puntos = []
-    for line in lines:
+    for line in content:
         parts = line.split()
         if len(parts) >= 2:
             try:
@@ -65,34 +71,29 @@ def procesar_xyz(file):
         msp_3d.add_line(puntos[i], puntos[i+1], dxfattribs={'thickness': altura_muro})
     return doc_3d
 
-# 4. Lógica de ejecución
 if uploaded_file is not None:
-    with st.spinner('Transformando plano...'):
+    with st.spinner('Procesando geometría...'):
         try:
-            nombre_archivo = uploaded_file.name.lower()
-            
-            if nombre_archivo.endswith('.dxf'):
+            nombre = uploaded_file.name.lower()
+            if nombre.endswith('.dxf'):
                 resultado = procesar_dxf(uploaded_file)
-            elif nombre_archivo.endswith('.xyz'):
-                resultado = procesar_xyz(uploaded_file)
             else:
-                st.error("Formato no reconocido.")
-                st.stop()
+                resultado = procesar_xyz(uploaded_file)
             
-            # EXPORTACIÓN FINAL
-            # Generamos el DXF de salida como una cadena de texto para la descarga
+            # Generar el archivo de salida
+            # Usamos io.StringIO porque el método .write() de ezdxf prefiere texto
             out_buffer = io.StringIO()
             resultado.write(out_buffer)
             
-            st.success("¡Éxito! Tu modelo 3D está listo.")
+            st.success("¡Modelo 3D generado!")
             st.download_button(
-                label="📥 Descargar Modelo 3D (.dxf)",
+                label="📥 Descargar Resultado 3D",
                 data=out_buffer.getvalue(),
-                file_name="ARCH_IA_MODELO_3D.dxf",
+                file_name="resultado_3d.dxf",
                 mime="application/dxf"
             )
         except Exception as e:
-            st.error(f"Se ha producido un error técnico: {e}")
+            st.error(f"Error detectado: {e}")
 
 st.divider()
-st.caption("ARCH-IA v1.0 | Herramienta profesional de conversión.")
+st.info("💡 Consejo: Si el DXF falla, prueba a guardarlo en AutoCAD como 'AutoCAD 2010 DXF'.")
