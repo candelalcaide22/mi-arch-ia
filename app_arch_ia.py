@@ -42,7 +42,7 @@ def procesar_dxf(file):
             for i in range(len(points)-1):
                 p1 = points[i]
                 p2 = points[i+1]
-                # Usamos solo X e Y para asegurar la base plana antes de extruir
+                # Aseguramos la base plana antes de extruir
                 msp_3d.add_line(p1[:2], p2[:2], dxfattribs={'thickness': altura_muro})
     
     return doc_3d
@@ -50,7 +50,7 @@ def procesar_dxf(file):
 def procesar_xyz(file):
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
-    # Para XYZ leemos como texto normal
+    # Para XYZ leemos como texto normal con manejo de errores
     lines = file.read().decode("utf-8", errors="ignore").splitlines()
     puntos = []
     for line in lines:
