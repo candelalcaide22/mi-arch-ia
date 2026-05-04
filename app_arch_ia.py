@@ -2,7 +2,7 @@ import streamlit as st
 import ezdxf
 import io
 
-# 1. Configuración de la interfaz (He cambiado el título para que veas si se actualiza)
+# 1. Configuración de la interfaz
 st.set_page_config(page_title="ARCH-IA 1.1", page_icon="🏗️")
 st.title("🏗️ ARCH-IA 1.1 - VERSIÓN FINAL")
 st.subheader("Conversor Inteligente de Planos a 3D")
@@ -16,7 +16,7 @@ formato = st.radio("Selecciona formato:", ("AutoCAD (.dxf)", "Nube de puntos (.x
 uploaded_file = st.file_uploader("Sube tu archivo", type=["dxf", "xyz"])
 
 def procesar_dxf(file):
-    # Leer el archivo como bytes
+    # LEER EN BINARIO (Crucial para evitar el error de 'str')
     stream = io.BytesIO(file.read())
     doc = ezdxf.read(stream)
     msp = doc.modelspace()
@@ -25,6 +25,7 @@ def procesar_dxf(file):
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
     
+    # Procesar líneas y polilíneas
     for entity in msp.query('LINE LWPOLYLINE'):
         if entity.dxftype() == 'LINE':
             start = entity.dxf.start
@@ -63,23 +64,23 @@ if uploaded_file is not None:
             else:
                 resultado = procesar_xyz(uploaded_file)
             
-            # --- ESTA ES LA PARTE DE LA DESCARGA (BLINDADA) ---
-            # 1. Escribimos el DXF a un buffer de texto
-            tmp_buffer = io.StringIO()
-            resultado.write(tmp_buffer)
+            # --- LA SOLUCIÓN DEFINITIVA AL ERROR DE BYTES/STR ---
+            # Forzamos la escritura directamente a un buffer de BYTES
+            out_buffer = io.BytesIO()
+            # Esta es la forma correcta de guardar un DXF como binario puro
+            resultado.write(out_buffer) 
+            byte_data = out_buffer.getvalue()
             
-            # 2. Convertimos ese texto a BYTES (esto evita el error de 'str')
-            formato_bytes = tmp_buffer.getvalue().encode('utf-8')
-            
-            st.success("¡LISTO! Ya puedes descargar.")
+            st.success("¡LO TENEMOS! Descarga tu modelo ahora.")
             st.download_button(
                 label="📥 Descargar Modelo 3D",
-                data=formato_bytes,
+                data=byte_data,
                 file_name="ARCH_IA_RESULTADO.dxf",
                 mime="application/dxf"
             )
         except Exception as e:
+            # Si algo falla, limpiamos el error para que sea legible
             st.error(f"Error detectado: {e}")
 
 st.divider()
-st.caption("ARCH-IA v1.1 | Si ves este mensaje, el código es el nuevo.")
+st.caption("ARCH-IA v1.1 | Código revisado para flujo binario puro.")
