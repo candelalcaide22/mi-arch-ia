@@ -16,31 +16,34 @@ formato = st.radio("Selecciona formato:", ("AutoCAD (.dxf)", "Nube de puntos (.x
 uploaded_file = st.file_uploader(f"Sube tu archivo", type=["dxf", "xyz"])
 
 def procesar_dxf(file):
-    # LEER: Convertimos los bytes del archivo a texto para ezdxf
+    # LEER: Obtenemos los bytes
     blob = file.read()
-    try:
-        content = blob.decode("utf-8")
-    except UnicodeDecodeError:
-        content = blob.decode("latin-1")
     
-    # Creamos el documento desde el texto
-    doc = ezdxf.readstr(content)
+    # Creamos un stream binario. ezdxf.read() acepta un objeto tipo archivo.
+    # Esto es mucho más seguro que readstr
+    stream = io.BytesIO(blob)
+    
+    # Intentamos leerlo. Si hay error de codificación, ezdxf suele manejarlo bien aquí.
+    doc = ezdxf.read(stream)
     msp = doc.modelspace()
     
-    # Nuevo documento 3D
+    # Nuevo documento 3D (Formato R2010 para máxima compatibilidad)
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
     
+    # Filtrar solo líneas y polilíneas
     for entity in msp.query('LINE LWPOLYLINE'):
         if entity.dxftype() == 'LINE':
             start = entity.dxf.start
             end = entity.dxf.end
+            # El truco: 'thickness' eleva la línea en el eje Z
             msp_3d.add_line(start, end, dxfattribs={'thickness': altura_muro})
         elif entity.dxftype() == 'LWPOLYLINE':
             points = entity.get_points()
             for i in range(len(points)-1):
                 p1 = points[i]
                 p2 = points[i+1]
+                # Forzamos 2D para la base y aplicamos elevación
                 msp_3d.add_line(p1[:2], p2[:2], dxfattribs={'thickness': altura_muro})
     
     return doc_3d
@@ -61,7 +64,7 @@ def procesar_xyz(file):
 
 # 4. Lógica de ejecución
 if uploaded_file is not None:
-    with st.spinner('Procesando...'):
+    with st.spinner('Procesando geometría...'):
         try:
             nombre = uploaded_file.name.lower()
             if nombre.endswith('.dxf'):
@@ -69,23 +72,21 @@ if uploaded_file is not None:
             else:
                 resultado = procesar_xyz(uploaded_file)
             
-            # --- AQUÍ ESTÁ EL TRUCO FINAL ---
-            # Creamos un buffer de texto
+            # --- SALIDA BLINDADA ---
+            # Ezdxf escribe el resultado en un buffer de texto
             s_buffer = io.StringIO()
             resultado.write(s_buffer)
             datos_finales = s_buffer.getvalue()
             
-            # El botón de Streamlit descarga TEXTO si le pasas un string 
-            # y los DXF son básicamente archivos de texto.
-            st.success("¡Por fin! Archivo procesado.")
+            st.success("¡Hecho! Ya puedes descargar tu modelo.")
             st.download_button(
                 label="📥 Descargar Resultado 3D",
                 data=datos_finales,
                 file_name="ARCH_IA_MODELO.dxf",
-                mime="text/plain"  # Cambiamos esto para que no pida bytes
+                mime="text/plain"
             )
         except Exception as e:
             st.error(f"Error detectado: {e}")
 
 st.divider()
-st.caption("ARCH-IA v1.0 | Si esto falla, me mudo a una cueva.")
+st.caption("ARCH-IA v1.0 | Arreglando el mundo línea a línea.")
