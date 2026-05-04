@@ -11,15 +11,20 @@ st.subheader("Conversor Inteligente de Planos a 3D")
 st.sidebar.header("Configuración")
 altura_muro = st.sidebar.slider("Altura del muro (m)", 1.0, 10.0, 2.5)
 
-# 3. Interfaz
+# 3. Interfaz de carga
 formato = st.radio("Selecciona formato:", ("AutoCAD (.dxf)", "Nube de puntos (.xyz)"))
 uploaded_file = st.file_uploader(f"Sube tu archivo", type=["dxf", "xyz"])
 
 def procesar_dxf(file):
-    # Leer como bytes para que no haya errores de texto
+    # LEER: Convertimos los bytes del archivo a texto para ezdxf
     blob = file.read()
-    stream = io.BytesIO(blob)
-    doc = ezdxf.read(stream)
+    try:
+        content = blob.decode("utf-8")
+    except UnicodeDecodeError:
+        content = blob.decode("latin-1")
+    
+    # Creamos el documento desde el texto
+    doc = ezdxf.readstr(content)
     msp = doc.modelspace()
     
     # Nuevo documento 3D
@@ -54,7 +59,7 @@ def procesar_xyz(file):
         msp_3d.add_line(puntos[i], puntos[i+1], dxfattribs={'thickness': altura_muro})
     return doc_3d
 
-# 4. Ejecución
+# 4. Lógica de ejecución
 if uploaded_file is not None:
     with st.spinner('Procesando...'):
         try:
@@ -64,20 +69,23 @@ if uploaded_file is not None:
             else:
                 resultado = procesar_xyz(uploaded_file)
             
-            # --- EL CAMBIO CRÍTICO ESTÁ AQUÍ ---
-            # Usamos BytesIO en lugar de StringIO para evitar el error 'str'
-            out_buffer = io.BytesIO()
-            resultado.write(out_buffer)
+            # --- AQUÍ ESTÁ EL TRUCO FINAL ---
+            # Creamos un buffer de texto
+            s_buffer = io.StringIO()
+            resultado.write(s_buffer)
+            datos_finales = s_buffer.getvalue()
             
-            st.success("¡Lo logramos! Modelo 3D listo.")
+            # El botón de Streamlit descarga TEXTO si le pasas un string 
+            # y los DXF son básicamente archivos de texto.
+            st.success("¡Por fin! Archivo procesado.")
             st.download_button(
                 label="📥 Descargar Resultado 3D",
-                data=out_buffer.getvalue(),
-                file_name="ARCH_IA_FINAL.dxf",
-                mime="application/dxf"
+                data=datos_finales,
+                file_name="ARCH_IA_MODELO.dxf",
+                mime="text/plain"  # Cambiamos esto para que no pida bytes
             )
         except Exception as e:
             st.error(f"Error detectado: {e}")
 
 st.divider()
-st.caption("ARCH-IA v1.0 | Superando errores como campeones.")
+st.caption("ARCH-IA v1.0 | Si esto falla, me mudo a una cueva.")
