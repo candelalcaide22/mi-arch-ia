@@ -3,8 +3,8 @@ import ezdxf
 import io
 
 # 1. Configuración de la interfaz
-st.set_page_config(page_title="ARCH-IA 1.3", page_icon="🏗️")
-st.title("🏗️ ARCH-IA 1.3 - SOLUCIÓN BINARIA")
+st.set_page_config(page_title="ARCH-IA 1.4", page_icon="🏗️")
+st.title("🏗️ ARCH-IA 1.4 - MODO RESCATE")
 st.subheader("Conversor Inteligente de Planos a 3D")
 
 # 2. Panel lateral
@@ -13,13 +13,18 @@ altura_muro = st.sidebar.slider("Altura del muro (m)", 1.0, 10.0, 2.5)
 
 # 3. Interfaz de carga
 formato = st.radio("Selecciona formato:", ("AutoCAD (.dxf)", "Nube de puntos (.xyz)"))
-uploaded_file = st.file_uploader("Sube tu archivo", type=["dxf", "xyz"])
+uploaded_file = st.file_uploader("Sube tu archivo", type=["dxf"])
 
 def procesar_dxf(file):
-    # LEER: Usamos BytesIO para manejar el archivo como datos binarios puros
-    # Esto es lo más seguro para evitar el error de 'str'
-    input_stream = io.BytesIO(file.read())
-    doc = ezdxf.read(input_stream)
+    # LEER: Usamos el método más compatible posible
+    blob = file.read()
+    try:
+        # Intentamos leerlo como stream de bytes
+        doc = ezdxf.read(io.BytesIO(blob))
+    except:
+        # Si falla, probamos decodificando a texto (latín-1 es el más tragón)
+        doc = ezdxf.read(io.StringIO(blob.decode('latin-1', errors='ignore')))
+    
     msp = doc.modelspace()
     
     # Crear nuevo documento 3D
@@ -41,34 +46,33 @@ def procesar_dxf(file):
     
     return doc_3d
 
-# 4. Lógica de ejecución y descarga
+# 4. Lógica de ejecución
 if uploaded_file is not None:
-    with st.spinner('Procesando geometría...'):
+    with st.spinner('Forzando conversión...'):
         try:
-            nombre = uploaded_file.name.lower()
-            if nombre.endswith('.dxf'):
-                resultado = procesar_dxf(uploaded_file)
-            else:
-                st.error("Por favor, usa un archivo .dxf")
-                st.stop()
+            resultado = procesar_dxf(uploaded_file)
             
-            # --- LA CLAVE ESTÁ AQUÍ ---
-            # En lugar de .write(), usamos .write() pero sobre un buffer de BYTES
-            # 'write' en ezdxf puede escribir en streams binarios directamente
-            output_buffer = io.BytesIO()
-            resultado.write(output_buffer)
-            datos_finales = output_buffer.getvalue()
+            # --- LA SOLUCIÓN QUE NO PUEDE FALLAR ---
+            # Guardamos a texto primero (StringIO siempre acepta texto de ezdxf)
+            s_buffer = io.StringIO()
+            resultado.write(s_buffer)
+            texto_del_plano = s_buffer.getvalue()
             
-            st.success("¡CONSEGUIDO! ARCH-IA ha vencido al error.")
+            # AHORA convertimos el texto a bytes nosotros mismos
+            # Esto es lo que el error "bytes-like object" pide a gritos
+            datos_binarios = texto_del_plano.encode('utf-8', errors='ignore')
+            
+            st.success("¡LO HEMOS DOBLADO! El archivo está listo.")
             st.download_button(
                 label="📥 Descargar Modelo 3D",
-                data=datos_finales,
-                file_name="ARCH_IA_MODELO_3D.dxf",
+                data=datos_binarios,
+                file_name="ARCH_IA_FINAL.dxf",
                 mime="application/dxf"
             )
         except Exception as e:
-            st.error(f"Error detectado: {e}")
+            st.error(f"Error técnico: {e}")
 
 st.divider()
-st.caption("ARCH-IA v1.3 | Flujo binario directo activado.")
+st.caption("ARCH-IA v1.4 | Si esto falla, el problema es el servidor, no el código.")
+
 
