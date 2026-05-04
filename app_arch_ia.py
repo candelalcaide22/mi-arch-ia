@@ -2,9 +2,9 @@ import streamlit as st
 import ezdxf
 import io
 
-# 1. Configuración de la interfaz
-st.set_page_config(page_title="ARCH-IA 1.0", page_icon="🏗️")
-st.title("🏗️ ARCH-IA 1.0")
+# 1. Configuración de la interfaz (He cambiado el título para que veas si se actualiza)
+st.set_page_config(page_title="ARCH-IA 1.1", page_icon="🏗️")
+st.title("🏗️ ARCH-IA 1.1 - VERSIÓN FINAL")
 st.subheader("Conversor Inteligente de Planos a 3D")
 
 # 2. Panel lateral
@@ -13,10 +13,10 @@ altura_muro = st.sidebar.slider("Altura del muro (m)", 1.0, 10.0, 2.5)
 
 # 3. Interfaz de carga
 formato = st.radio("Selecciona formato:", ("AutoCAD (.dxf)", "Nube de puntos (.xyz)"))
-uploaded_file = st.file_uploader(f"Sube tu archivo", type=["dxf", "xyz"])
+uploaded_file = st.file_uploader("Sube tu archivo", type=["dxf", "xyz"])
 
 def procesar_dxf(file):
-    # LEER: Usamos BytesIO directamente
+    # Leer el archivo como bytes
     stream = io.BytesIO(file.read())
     doc = ezdxf.read(stream)
     msp = doc.modelspace()
@@ -25,7 +25,6 @@ def procesar_dxf(file):
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
     
-    # Procesar geometría
     for entity in msp.query('LINE LWPOLYLINE'):
         if entity.dxftype() == 'LINE':
             start = entity.dxf.start
@@ -54,7 +53,7 @@ def procesar_xyz(file):
         msp_3d.add_line(puntos[i], puntos[i+1], dxfattribs={'thickness': altura_muro})
     return doc_3d
 
-# 4. Lógica de ejecución
+# 4. Lógica de ejecución y descarga
 if uploaded_file is not None:
     with st.spinner('Procesando...'):
         try:
@@ -64,21 +63,23 @@ if uploaded_file is not None:
             else:
                 resultado = procesar_xyz(uploaded_file)
             
-            # --- SALIDA BINARIA TOTAL ---
-            # Forzamos la escritura a un buffer de bytes, no de texto
-            final_buffer = io.BytesIO()
-            resultado.write(final_buffer)
-            byte_data = final_buffer.getvalue()
+            # --- ESTA ES LA PARTE DE LA DESCARGA (BLINDADA) ---
+            # 1. Escribimos el DXF a un buffer de texto
+            tmp_buffer = io.StringIO()
+            resultado.write(tmp_buffer)
             
-            st.success("¡ÉXITO! ARCH-IA ha generado el modelo.")
+            # 2. Convertimos ese texto a BYTES (esto evita el error de 'str')
+            formato_bytes = tmp_buffer.getvalue().encode('utf-8')
+            
+            st.success("¡LISTO! Ya puedes descargar.")
             st.download_button(
-                label="📥 Descargar Resultado 3D",
-                data=byte_data,
-                file_name="MODELO_ARCH_IA.dxf",
+                label="📥 Descargar Modelo 3D",
+                data=formato_bytes,
+                file_name="ARCH_IA_RESULTADO.dxf",
                 mime="application/dxf"
             )
         except Exception as e:
             st.error(f"Error detectado: {e}")
 
 st.divider()
-st.caption("ARCH-IA v1.0 | La persistencia es la clave del éxito.")
+st.caption("ARCH-IA v1.1 | Si ves este mensaje, el código es el nuevo.")
