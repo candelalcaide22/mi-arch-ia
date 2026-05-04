@@ -3,8 +3,8 @@ import ezdxf
 import io
 
 # 1. Configuración de la interfaz
-st.set_page_config(page_title="ARCH-IA 1.4", page_icon="🏗️")
-st.title("🏗️ ARCH-IA 1.4 - MODO RESCATE")
+st.set_page_config(page_title="ARCH-IA 1.5", page_icon="🏗️")
+st.title("🏗️ ARCH-IA 1.5 - REPARACIÓN DE DATOS")
 st.subheader("Conversor Inteligente de Planos a 3D")
 
 # 2. Panel lateral
@@ -12,67 +12,62 @@ st.sidebar.header("Configuración")
 altura_muro = st.sidebar.slider("Altura del muro (m)", 1.0, 10.0, 2.5)
 
 # 3. Interfaz de carga
-formato = st.radio("Selecciona formato:", ("AutoCAD (.dxf)", "Nube de puntos (.xyz)"))
-uploaded_file = st.file_uploader("Sube tu archivo", type=["dxf"])
+uploaded_file = st.file_uploader("Sube tu archivo AutoCAD (.dxf)", type=["dxf"])
 
-def procesar_dxf(file):
-    # LEER: Usamos el método más compatible posible
-    blob = file.read()
+def procesar_dxf_blindado(file):
+    # LEER: Leemos el contenido bruto
+    raw_data = file.read()
+    
     try:
-        # Intentamos leerlo como stream de bytes
-        doc = ezdxf.read(io.BytesIO(blob))
-    except:
-        # Si falla, probamos decodificando a texto (latín-1 es el más tragón)
-        doc = ezdxf.read(io.StringIO(blob.decode('latin-1', errors='ignore')))
+        # INTENTO 1: Leer como stream de bytes (estándar moderno)
+        stream = io.BytesIO(raw_data)
+        doc = ezdxf.read(stream)
+    except Exception:
+        try:
+            # INTENTO 2: Si hay "datos binarios inválidos", forzamos decodificación técnica
+            # Esto limpia caracteres extraños que causan el error en la línea 9304
+            text_data = raw_data.decode('latin-1', errors='ignore')
+            doc = ezdxf.readstr(text_data)
+        except Exception as e:
+            raise Exception(f"El archivo DXF está corrupto o protegido: {e}")
     
     msp = doc.modelspace()
-    
-    # Crear nuevo documento 3D
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
     
-    # Procesar líneas y polilíneas
+    # Procesar geometrías
     for entity in msp.query('LINE LWPOLYLINE'):
         if entity.dxftype() == 'LINE':
-            start = entity.dxf.start
-            end = entity.dxf.end
-            msp_3d.add_line(start, end, dxfattribs={'thickness': altura_muro})
+            msp_3d.add_line(entity.dxf.start, entity.dxf.end, dxfattribs={'thickness': altura_muro})
         elif entity.dxftype() == 'LWPOLYLINE':
             points = entity.get_points()
             for i in range(len(points)-1):
-                p1 = points[i]
-                p2 = points[i+1]
-                msp_3d.add_line(p1[:2], p2[:2], dxfattribs={'thickness': altura_muro})
+                msp_3d.add_line(points[i][:2], points[i+1][:2], dxfattribs={'thickness': altura_muro})
     
     return doc_3d
 
 # 4. Lógica de ejecución
 if uploaded_file is not None:
-    with st.spinner('Forzando conversión...'):
+    with st.spinner('Reparando y convirtiendo plano...'):
         try:
-            resultado = procesar_dxf(uploaded_file)
+            resultado = procesar_dxf_blindado(uploaded_file)
             
-            # --- LA SOLUCIÓN QUE NO PUEDE FALLAR ---
-            # Guardamos a texto primero (StringIO siempre acepta texto de ezdxf)
-            s_buffer = io.StringIO()
-            resultado.write(s_buffer)
-            texto_del_plano = s_buffer.getvalue()
+            # EXPORTACIÓN SEGURA
+            out_buffer = io.StringIO()
+            resultado.write(out_buffer)
+            final_data = out_buffer.getvalue().encode('utf-8')
             
-            # AHORA convertimos el texto a bytes nosotros mismos
-            # Esto es lo que el error "bytes-like object" pide a gritos
-            datos_binarios = texto_del_plano.encode('utf-8', errors='ignore')
-            
-            st.success("¡LO HEMOS DOBLADO! El archivo está listo.")
+            st.success("¡CONSEGUIDO! El error de datos binarios ha sido ignorado.")
             st.download_button(
                 label="📥 Descargar Modelo 3D",
-                data=datos_binarios,
-                file_name="ARCH_IA_FINAL.dxf",
+                data=final_data,
+                file_name="ARCH_IA_REPARADO.dxf",
                 mime="application/dxf"
             )
         except Exception as e:
-            st.error(f"Error técnico: {e}")
+            st.error(f"Error técnico persistente: {e}")
+            st.info("Consejo: Intenta abrir el archivo en AutoCAD y 'Guardar como' DXF versión 2010 o 2013.")
 
 st.divider()
-st.caption("ARCH-IA v1.4 | Si esto falla, el problema es el servidor, no el código.")
-
+st.caption("ARCH-IA v1.5 | Sistema de limpieza de datos activado.")
 
