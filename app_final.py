@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS (v7.1 + Ajuste de Deslizador) ---
+# --- CSS (v7.2 + Estilo de Input Numérico) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap');
@@ -27,6 +27,7 @@ st.markdown("""
     .aclaracion-verde { 
         color: #8A9A5B !important; 
         font-family: 'Inter', sans-serif !important;
+        margin-bottom: 5px;
     }
     
     /* Selector de formato */
@@ -35,11 +36,11 @@ st.markdown("""
         color: #333333 !important;
         font-weight: 500 !important;
     }
-    
-    /* Forzar que el Slider sea más largo y fácil de usar */
-    div[data-testid="stSlider"] {
-        padding-top: 10px;
-        padding-bottom: 20px;
+
+    /* Estilo para el campo de entrada numérica */
+    div[data-testid="stNumberInput"] {
+        background-color: white;
+        border-radius: 0px;
     }
 
     span[data-testid="stWidgetLabel"] > div > div > p { display: none; } 
@@ -60,11 +61,11 @@ with st.sidebar:
     with st.expander("1. Preparación del Plano", expanded=True):
         st.write("Líneas o polilíneas unidas (JOIN). Dibujo limpio sin bloques.")
     with st.expander("2. Sistema de Unidades"):
-        st.write("Escala 1:1. Usa el deslizador para definir la **altura deseada** (Z).")
+        st.write("Escala 1:1. **Escribe la altura exacta** en el recuadro de configuración.")
     with st.expander("3. Exportación DXF"):
         st.write("Guardar como AutoCAD DXF 2010 o 2013.")
     st.write("---")
-    st.caption("alcaidearchia | Studio v7.2")
+    st.caption("alcaidearchia | Studio v7.3")
 
 # --- CUERPO PRINCIPAL ---
 st.title("La Herramienta de Conversión Arquitectónica")
@@ -81,10 +82,17 @@ with col1:
         horizontal=True
     )
     st.write("<br>", unsafe_allow_html=True)
-    st.markdown('<p class="aclaracion-verde">Define la cota de altura (Z) que tendrá el volumen generado.</p>', unsafe_allow_html=True)
+    st.markdown('<p class="aclaracion-verde">Indica la altura exacta (Z) para la extrusión:</p>', unsafe_allow_html=True)
     
-    # AJUSTE CLAVE: Step de 0.001 para precisión milimétrica y formato de 3 decimales
-    altura_h = st.slider("Altura del Cubo (m)", min_value=0.000, max_value=50.000, value=3.500, step=0.001, format="%.3f")
+    # CAMBIO CRÍTICO: De Slider a Number Input para precisión total
+    altura_h = st.number_input(
+        "Altura del Cubo (m)", 
+        min_value=0.000, 
+        max_value=500.000, 
+        value=3.500, 
+        step=0.001, 
+        format="%.3f"
+    )
     
     if formato == "AutoCAD (DXF)":
         uploaded_file = st.file_uploader("Subir plano DXF", type=["dxf"])
@@ -125,10 +133,9 @@ with col2:
                 st.write("<br>", unsafe_allow_html=True)
                 out = io.StringIO()
                 doc_3d.write(out)
-                # El nombre del archivo ahora también refleja la precisión
                 st.download_button("📥 DESCARGAR PROYECTO 3D", out.getvalue(), f"ARCH_IA_{ancho:.3f}x{largo:.3f}_h{h:.3f}.dxf", use_container_width=True)
         except Exception:
             st.error("Error de lectura.")
 
 st.write("<br><br>", unsafe_allow_html=True)
-st.caption("alcaidearchia | Studio v7.2")
+st.caption("alcaidearchia | Studio v7.3")
