@@ -16,10 +16,11 @@ st.markdown("""
     h1, h2, h3 { font-family: 'Playfair Display', serif !important; color: #2C2C2C !important; }
     .subtitulo-normal { font-family: 'Inter', sans-serif !important; color: #6B6B6B !important; font-size: 1rem; font-style: normal !important; }
     
-    /* Color Verde Sage para el texto de las instrucciones */
+    /* Color Verde Sage para el texto de las instrucciones y aclaraciones */
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p, 
     [data-testid="stSidebar"] .stMarkdown, 
-    [data-testid="stSidebar"] li { 
+    [data-testid="stSidebar"] li,
+    .aclaracion-verde { 
         color: #8A9A5B !important; 
         font-family: 'Inter', sans-serif !important;
     }
@@ -84,8 +85,10 @@ st.write("<br>", unsafe_allow_html=True)
 col1, col2 = st.columns([1, 1.2], gap="large")
 
 with col1:
-    st.markdown("### Configuración")
-    altura_h = st.slider("Altura de Extrusión", 0.1, 50.0, 3.5)
+    st.markdown("### Parámetros de Extrusión")
+    # Explicación en verde sage justo encima de la barra
+    st.markdown('<p class="aclaracion-verde">Define la cota de altura (Z) que tendrá el volumen generado.</p>', unsafe_allow_html=True)
+    altura_h = st.slider("Altura del Cubo (m)", 0.1, 50.0, 3.5)
     uploaded_file = st.file_uploader("Subir plano DXF", type=["dxf"])
 
 with col2:
@@ -134,4 +137,4 @@ with col2:
             st.error("Error de lectura.")
 
 st.write("<br><br>", unsafe_allow_html=True)
-st.caption("ARCH-IA Studio | v6.6")
+st.caption("ARCH-IA Studio | v6.7")
