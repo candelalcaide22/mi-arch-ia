@@ -1,10 +1,11 @@
 import streamlit as st
 import ezdxf
 import io
+import re
 
 # 1. Configuración de la interfaz
-st.set_page_config(page_title="ARCH-IA 1.7", page_icon="🏗️")
-st.title("🏗️ ARCH-IA 1.7 - LIMPIEZA PROFUNDA")
+st.set_page_config(page_title="ARCH-IA 1.8", page_icon="🏗️")
+st.title("🏗️ ARCH-IA 1.8 - FILTRO ANTIBINARIO")
 st.subheader("Conversor Inteligente de Planos a 3D")
 
 # 2. Panel lateral
@@ -14,31 +15,33 @@ altura_muro = st.sidebar.slider("Altura del muro (m)", 1.0, 10.0, 2.5)
 # 3. Interfaz de carga
 uploaded_file = st.file_uploader("Sube tu archivo AutoCAD (.dxf)", type=["dxf"])
 
-def procesar_dxf_extremo(file):
-    # LEER: Obtenemos los bytes brutos
-    raw_bytes = file.read()
+def limpiar_dxf_binario(raw_bytes):
+    """
+    Intenta limpiar caracteres no imprimibles que causan el error 9304
+    antes de pasar el archivo a ezdxf.
+    """
+    # Intentamos decodificar ignorando errores para obtener texto puro
+    text = raw_bytes.decode('latin-1', errors='ignore')
+    # Eliminamos caracteres de control extraños (excepto saltos de línea y retornos)
+    text_limpio = "".join(i for i in text if ord(i) < 128 or i in '\n\r\t')
+    return text_limpio
+
+def procesar_dxf_v18(file):
+    raw_data = file.read()
     
-    # TRUCO MAESTRO: Forzamos la decodificación ignorando errores binarios
-    # Esto "borra" lo que haya de malo en la línea 9304 y deja solo el dibujo
-    try:
-        # Intentamos con latin-1 que es el más permisivo con archivos viejos
-        text_content = raw_bytes.decode('latin-1', errors='ignore')
-    except:
-        # Si falla, usamos utf-8 ignorando errores
-        text_content = raw_bytes.decode('utf-8', errors='ignore')
+    # PASO 1: Limpieza manual del texto
+    texto_procesado = limpiar_dxf_binario(raw_data)
     
-    # Creamos un stream de texto que ezdxf entienda
-    text_stream = io.StringIO(text_content)
-    
-    # Cargamos el documento
-    doc = ezdxf.read(text_stream)
+    # PASO 2: Cargar el documento desde el texto limpio
+    stream = io.StringIO(texto_procesado)
+    doc = ezdxf.read(stream)
     msp = doc.modelspace()
     
     # Crear nuevo documento 3D
     doc_3d = ezdxf.new('R2010')
     msp_3d = doc_3d.modelspace()
     
-    # Procesar líneas y polilíneas
+    # Procesar geometrías
     for entity in msp.query('LINE LWPOLYLINE'):
         if entity.dxftype() == 'LINE':
             msp_3d.add_line(entity.dxf.start, entity.dxf.end, dxfattribs={'thickness': altura_muro})
@@ -51,25 +54,25 @@ def procesar_dxf_extremo(file):
 
 # 4. Lógica de ejecución
 if uploaded_file is not None:
-    with st.spinner('Extrayendo geometría y limpiando errores...'):
+    with st.spinner('Ejecutando limpieza profunda del archivo...'):
         try:
-            resultado = procesar_dxf_extremo(uploaded_file)
+            resultado = procesar_dxf_v18(uploaded_file)
             
-            # EXPORTACIÓN SEGURA
+            # Exportación a bytes
             out_buffer = io.StringIO()
             resultado.write(out_buffer)
             final_bytes = out_buffer.getvalue().encode('utf-8', errors='ignore')
             
-            st.success("¡LO LOGRAMOS! El error de la línea 9304 ha sido neutralizado.")
+            st.success("¡ARCHIVO DESBLOQUEADO! Hemos saltado las líneas corruptas.")
             st.download_button(
                 label="📥 Descargar Modelo 3D",
                 data=final_bytes,
-                file_name="ARCH_IA_REPARADO.dxf",
+                file_name="ARCH_IA_FINAL_REPARADO.dxf",
                 mime="application/dxf"
             )
         except Exception as e:
-            st.error(f"Error persistente: {e}")
-            st.info("💡 Si esto sigue fallando, abre tu archivo en AutoCAD y guárdalo como 'DXF de texto (ASCII)' en lugar de binario.")
+            st.error(f"El archivo sigue bloqueado: {e}")
+            st.warning("⚠️ ÚLTIMO RECURSO: Abre el archivo en AutoCAD, dale a 'Guardar como' y asegúrate de elegir 'AutoCAD 2013 DXF (ASCII)'.")
 
 st.divider()
-st.caption("ARCH-IA v1.7 | Modo de rescate de archivos corruptos activo.")
+st.caption("ARCH-IA v1.8 | Filtro de caracteres no-ASCII activado.")
