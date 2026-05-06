@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS (INTACTO v7.0) ---
+# --- CSS (v7.1 + Ajuste de Deslizador) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap');
@@ -19,6 +19,8 @@ st.markdown("""
     header[data-testid="stHeader"] * { color: white !important; }
     h1, h2, h3 { font-family: 'Playfair Display', serif !important; color: #2C2C2C !important; }
     .subtitulo-normal { font-family: 'Inter', sans-serif !important; color: #6B6B6B !important; font-size: 1rem; }
+    
+    /* Instrucciones en Verde Sage */
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p, 
     [data-testid="stSidebar"] .stMarkdown, 
     [data-testid="stSidebar"] li,
@@ -26,11 +28,20 @@ st.markdown("""
         color: #8A9A5B !important; 
         font-family: 'Inter', sans-serif !important;
     }
+    
+    /* Selector de formato */
     div[data-testid="stRadio"] label p {
         font-family: sans-serif !important;
         color: #333333 !important;
         font-weight: 500 !important;
     }
+    
+    /* Forzar que el Slider sea más largo y fácil de usar */
+    div[data-testid="stSlider"] {
+        padding-top: 10px;
+        padding-bottom: 20px;
+    }
+
     span[data-testid="stWidgetLabel"] > div > div > p { display: none; } 
     .aria-label, [aria-hidden="true"] { display: none !important; }
     div.stButton > button { background-color: #8A9A5B !important; color: white !important; border-radius: 0px !important; border: none !important; padding: 12px !important; width: 100%; text-transform: uppercase; letter-spacing: 1.5px; }
@@ -53,7 +64,7 @@ with st.sidebar:
     with st.expander("3. Exportación DXF"):
         st.write("Guardar como AutoCAD DXF 2010 o 2013.")
     st.write("---")
-    st.caption("alcaidearchia | Studio v7.1")
+    st.caption("alcaidearchia | Studio v7.2")
 
 # --- CUERPO PRINCIPAL ---
 st.title("La Herramienta de Conversión Arquitectónica")
@@ -71,7 +82,9 @@ with col1:
     )
     st.write("<br>", unsafe_allow_html=True)
     st.markdown('<p class="aclaracion-verde">Define la cota de altura (Z) que tendrá el volumen generado.</p>', unsafe_allow_html=True)
-    altura_h = st.slider("Altura del Cubo (m)", 0.1, 50.0, 3.5)
+    
+    # AJUSTE CLAVE: Step de 0.001 para precisión milimétrica y formato de 3 decimales
+    altura_h = st.slider("Altura del Cubo (m)", min_value=0.000, max_value=50.000, value=3.500, step=0.001, format="%.3f")
     
     if formato == "AutoCAD (DXF)":
         uploaded_file = st.file_uploader("Subir plano DXF", type=["dxf"])
@@ -97,7 +110,6 @@ with col2:
 
                 st.markdown("### Análisis de Medidas")
                 c1, c2 = st.columns(2)
-                # Ajuste: 3 decimales y unidad "m"
                 c1.metric("Ancho", f"{ancho:.3f} m")
                 c2.metric("Largo", f"{largo:.3f} m")
 
@@ -113,9 +125,10 @@ with col2:
                 st.write("<br>", unsafe_allow_html=True)
                 out = io.StringIO()
                 doc_3d.write(out)
-                st.download_button("📥 DESCARGAR PROYECTO 3D", out.getvalue(), f"ARCH_IA_{ancho:.2f}x{largo:.2f}.dxf", use_container_width=True)
+                # El nombre del archivo ahora también refleja la precisión
+                st.download_button("📥 DESCARGAR PROYECTO 3D", out.getvalue(), f"ARCH_IA_{ancho:.3f}x{largo:.3f}_h{h:.3f}.dxf", use_container_width=True)
         except Exception:
             st.error("Error de lectura.")
 
 st.write("<br><br>", unsafe_allow_html=True)
-st.caption("alcaidearchia | Studio v7.1")
+st.caption("alcaidearchia | Studio v7.2")
