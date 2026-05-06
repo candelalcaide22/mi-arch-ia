@@ -3,20 +3,26 @@ import ezdxf
 from ezdxf import recover
 import io
 
-# Configuración de página
-st.set_page_config(page_title="ARCH-IA | Studio", page_icon="🏢", layout="wide")
+# 1. Configuración de página - alcaidearchia marca
+st.set_page_config(
+    page_title="alcaidearchia | Studio", 
+    page_icon="🏢", 
+    layout="wide"
+)
 
-# --- CSS AVANZADO (MANTENIENDO ESTÉTICA AL 100%) ---
+# --- CSS AVANZADO (DISEÑO EDITORIAL INTEGRADO) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap');
+    
     .stApp { background-color: #FDFCF0; }
     header[data-testid="stHeader"] { background-color: #8A9A5B !important; }
     header[data-testid="stHeader"] * { color: white !important; }
-    h1, h2, h3 { font-family: 'Playfair Display', serif !important; color: #2C2C2C !important; }
-    .subtitulo-normal { font-family: 'Inter', sans-serif !important; color: #6B6B6B !important; font-size: 1rem; font-style: normal !important; }
     
-    /* Color Verde Sage para el texto de las instrucciones y aclaraciones */
+    h1, h2, h3 { font-family: 'Playfair Display', serif !important; color: #2C2C2C !important; }
+    .subtitulo-normal { font-family: 'Inter', sans-serif !important; color: #6B6B6B !important; font-size: 1rem; }
+    
+    /* Estilo de la Sidebar e Instrucciones en Verde Sage */
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p, 
     [data-testid="stSidebar"] .stMarkdown, 
     [data-testid="stSidebar"] li,
@@ -25,57 +31,50 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important;
     }
     
+    /* Limpieza de etiquetas de Streamlit */
     span[data-testid="stWidgetLabel"] > div > div > p { display: none; } 
     .aria-label, [aria-hidden="true"] { display: none !important; }
-    div.stButton > button { background-color: #8A9A5B !important; color: white !important; border-radius: 0px !important; border: none !important; padding: 12px !important; width: 100%; text-transform: uppercase; letter-spacing: 1.5px; }
+    
+    /* Botones y Selectores */
+    div.stButton > button { 
+        background-color: #8A9A5B !important; 
+        color: white !important; 
+        border-radius: 0px !important; 
+        border: none !important; 
+        padding: 12px !important; 
+        width: 100%; 
+        text-transform: uppercase; 
+        letter-spacing: 1.5px; 
+    }
+    
+    /* Estilo para los Radio Buttons (Selector de Formato) */
+    div[data-testid="stRadio"] label {
+        font-family: 'Inter', sans-serif !important;
+        color: #4A4A4A !important;
+    }
+
     [data-testid="stSidebar"] { background-color: #F7F5E6 !important; }
     [data-testid="stExpander"] svg { display: none !important; }
     [data-testid="stMetricValue"] { font-family: 'Playfair Display', serif !important; color: #8A9A5B !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR (CON INSTRUCCIÓN DE BARRA DE ALTURA) ---
+# --- SIDEBAR (INSTRUCCIONES) ---
 with st.sidebar:
-    st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>ARCH-IA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 0.8rem; color: #8A9A5B;'>STUDIO EDITION</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>alcaidearchia</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 0.8rem; color: #8A9A5B;'>ARCHITECTURAL STUDIO</p>", unsafe_allow_html=True)
     st.write("---")
-    
     st.write("### 📖 Protocolo de Trabajo")
-    
     with st.expander("1. Preparación del Plano", expanded=True):
-        st.write("""
-        Para garantizar un sólido perfecto:
-        * **Entidades:** Utiliza únicamente líneas (`LINE`) o polilíneas cerradas (`PLINE`).
-        * **Limpieza:** Elimina bloques, sombreados o textos.
-        * **Geometría:** Asegúrate de unir vértices (comando `JOIN`).
-        """)
-        
+        st.write("Líneas o polilíneas unidas (JOIN). Dibujo limpio sin bloques.")
     with st.expander("2. Sistema de Unidades"):
-        st.write("""
-        Este motor trabaja con **Escala Real 1:1**:
-        * **Barra de Configuración:** Utiliza el deslizador para definir la **altura deseada** (extrusión Z) de tu modelo antes de descargar.
-        * Si tu proyecto está en metros, dibuja un cuadrado de 5x5 para obtener 25m².
-        * El programa centrará el dibujo en el origen (0,0,0).
-        """)
-        
+        st.write("Escala 1:1. Usa el deslizador para definir la **altura deseada** (Z).")
     with st.expander("3. Exportación DXF"):
-        st.write("""
-        **Obligatorio:**
-        Al guardar en AutoCAD, selecciona:
-        * **Tipo:** AutoCAD DXF.
-        * **Versión:** 2010 o 2013.
-        """)
-
-    with st.expander("4. Flujo en el Modelo 3D"):
-        st.write("""
-        Tras la descarga:
-        1. Abre el archivo en AutoCAD.
-        2. Activa el estilo visual **Conceptual**.
-        3. Usa `Shift` + rueda del ratón para orbitar.
-        """)
-    
+        st.write("Guardar como AutoCAD DXF 2010 o 2013.")
+    with st.expander("4. Formatos Soportados"):
+        st.write("Actualmente: DXF. Próximamente: PDF, XYZ e Imágenes.")
     st.write("---")
-    st.caption("Soporte: studio@arch-ia.com")
+    st.caption("alcaidearchia | Studio v6.9")
 
 # --- CUERPO PRINCIPAL ---
 st.title("The Architectural Conversion Tool")
@@ -85,14 +84,28 @@ st.write("<br>", unsafe_allow_html=True)
 col1, col2 = st.columns([1, 1.2], gap="large")
 
 with col1:
-    st.markdown("### Parámetros de Extrusión")
-    # Explicación en verde sage justo encima de la barra
+    st.markdown("### Configuración del Proyecto")
+    
+    # --- REINCORPORACIÓN DEL SELECTOR DE FORMATO ---
+    formato = st.radio(
+        "Selecciona el formato de entrada:",
+        ("AutoCAD (DXF)", "Documento (PDF)", "Nube de puntos (XYZ)", "Imagen (PNG/JPG)"),
+        horizontal=True
+    )
+    
+    st.write("<br>", unsafe_allow_html=True)
     st.markdown('<p class="aclaracion-verde">Define la cota de altura (Z) que tendrá el volumen generado.</p>', unsafe_allow_html=True)
     altura_h = st.slider("Altura del Cubo (m)", 0.1, 50.0, 3.5)
-    uploaded_file = st.file_uploader("Subir plano DXF", type=["dxf"])
+    
+    # Ajustamos el cargador de archivos según la opción elegida
+    if formato == "AutoCAD (DXF)":
+        uploaded_file = st.file_uploader("Subir plano DXF", type=["dxf"])
+    else:
+        st.warning(f"El módulo para {formato} está en desarrollo. Por ahora usa DXF para generar el 3D.")
+        uploaded_file = None
 
 with col2:
-    if uploaded_file is not None:
+    if uploaded_file is not None and formato == "AutoCAD (DXF)":
         try:
             blob = uploaded_file.read()
             doc, auditor = recover.read(io.BytesIO(blob))
@@ -110,9 +123,10 @@ with col2:
 
                 st.markdown("### Análisis")
                 c1, c2 = st.columns(2)
-                c1.metric("Ancho", f"{ancho:.2f}")
-                c2.metric("Largo", f"{largo:.2f}")
+                c1.metric("Ancho Detectado", f"{ancho:.2f}")
+                c2.metric("Largo Detectado", f"{largo:.2f}")
 
+                # Generación 3D
                 doc_3d = ezdxf.new('R2010')
                 msp_3d = doc_3d.modelspace()
                 h = altura_h
@@ -134,7 +148,7 @@ with col2:
                 st.download_button("📥 DESCARGAR PROYECTO 3D", out.getvalue(), "ARCH_IA_PRO.dxf", use_container_width=True)
                 
         except Exception:
-            st.error("Error de lectura.")
+            st.error("Error de lectura. Revisa el formato DXF.")
 
 st.write("<br><br>", unsafe_allow_html=True)
-st.caption("ARCH-IA Studio | v6.7")
+st.caption("alcaidearchia | Studio v6.9")
