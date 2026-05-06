@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS AVANZADO (DISEÑO EDITORIAL INTEGRADO) ---
+# --- CSS AVANZADO (AJUSTE DE CONTRASTE EN PESTAÑAS) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap');
@@ -22,7 +22,7 @@ st.markdown("""
     h1, h2, h3 { font-family: 'Playfair Display', serif !important; color: #2C2C2C !important; }
     .subtitulo-normal { font-family: 'Inter', sans-serif !important; color: #6B6B6B !important; font-size: 1rem; }
     
-    /* Estilo de la Sidebar e Instrucciones en Verde Sage */
+    /* Instrucciones en Verde Sage */
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p, 
     [data-testid="stSidebar"] .stMarkdown, 
     [data-testid="stSidebar"] li,
@@ -31,11 +31,18 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important;
     }
     
-    /* Limpieza de etiquetas de Streamlit */
+    /* Etiquetas de pestañas/radio: Tipografía básica y Gris Oscuro */
+    div[data-testid="stRadio"] label p {
+        font-family: sans-serif !important; /* Tipografía básica */
+        color: #333333 !important; /* Gris oscuro para contraste */
+        font-weight: 500 !important;
+    }
+    
+    /* Limpieza de etiquetas sobrantes de Streamlit */
     span[data-testid="stWidgetLabel"] > div > div > p { display: none; } 
     .aria-label, [aria-hidden="true"] { display: none !important; }
     
-    /* Botones y Selectores */
+    /* Botones Sage */
     div.stButton > button { 
         background-color: #8A9A5B !important; 
         color: white !important; 
@@ -47,12 +54,6 @@ st.markdown("""
         letter-spacing: 1.5px; 
     }
     
-    /* Estilo para los Radio Buttons (Selector de Formato) */
-    div[data-testid="stRadio"] label {
-        font-family: 'Inter', sans-serif !important;
-        color: #4A4A4A !important;
-    }
-
     [data-testid="stSidebar"] { background-color: #F7F5E6 !important; }
     [data-testid="stExpander"] svg { display: none !important; }
     [data-testid="stMetricValue"] { font-family: 'Playfair Display', serif !important; color: #8A9A5B !important; }
@@ -72,9 +73,9 @@ with st.sidebar:
     with st.expander("3. Exportación DXF"):
         st.write("Guardar como AutoCAD DXF 2010 o 2013.")
     with st.expander("4. Formatos Soportados"):
-        st.write("Actualmente: DXF. Próximamente: PDF, XYZ e Imágenes.")
+        st.write("Selecciona el formato en el menú central antes de cargar.")
     st.write("---")
-    st.caption("alcaidearchia | Studio v6.9")
+    st.caption("alcaidearchia | Studio v7.0")
 
 # --- CUERPO PRINCIPAL ---
 st.title("The Architectural Conversion Tool")
@@ -86,7 +87,7 @@ col1, col2 = st.columns([1, 1.2], gap="large")
 with col1:
     st.markdown("### Configuración del Proyecto")
     
-    # --- REINCORPORACIÓN DEL SELECTOR DE FORMATO ---
+    # SELECTOR DE FORMATO (Tipografía básica y contraste gris oscuro aplicado vía CSS)
     formato = st.radio(
         "Selecciona el formato de entrada:",
         ("AutoCAD (DXF)", "Documento (PDF)", "Nube de puntos (XYZ)", "Imagen (PNG/JPG)"),
@@ -97,11 +98,10 @@ with col1:
     st.markdown('<p class="aclaracion-verde">Define la cota de altura (Z) que tendrá el volumen generado.</p>', unsafe_allow_html=True)
     altura_h = st.slider("Altura del Cubo (m)", 0.1, 50.0, 3.5)
     
-    # Ajustamos el cargador de archivos según la opción elegida
     if formato == "AutoCAD (DXF)":
         uploaded_file = st.file_uploader("Subir plano DXF", type=["dxf"])
     else:
-        st.warning(f"El módulo para {formato} está en desarrollo. Por ahora usa DXF para generar el 3D.")
+        st.info(f"El módulo para **{formato}** se activará próximamente. Por ahora utiliza DXF.")
         uploaded_file = None
 
 with col2:
@@ -123,10 +123,9 @@ with col2:
 
                 st.markdown("### Análisis")
                 c1, c2 = st.columns(2)
-                c1.metric("Ancho Detectado", f"{ancho:.2f}")
-                c2.metric("Largo Detectado", f"{largo:.2f}")
+                c1.metric("Ancho", f"{ancho:.2f}")
+                c2.metric("Largo", f"{largo:.2f}")
 
-                # Generación 3D
                 doc_3d = ezdxf.new('R2010')
                 msp_3d = doc_3d.modelspace()
                 h = altura_h
@@ -135,11 +134,7 @@ with col2:
                 b = [(nx0,ny0,0), (nx1,ny0,0), (nx1,ny1,0), (nx0,ny1,0)]
                 t = [(nx0,ny0,h), (nx1,ny0,h), (nx1,ny1,h), (nx0,ny1,h)]
 
-                caras = [
-                    [b[0], b[1], b[2], b[3]], [t[0], t[1], t[2], t[3]],
-                    [b[0], b[1], t[1], t[0]], [b[1], b[2], t[2], t[1]],
-                    [b[2], b[3], t[3], t[2]], [b[3], b[0], t[0], t[3]]
-                ]
+                caras = [[b[0], b[1], b[2], b[3]], [t[0], t[1], t[2], t[3]], [b[0], b[1], t[1], t[0]], [b[1], b[2], t[2], t[1]], [b[2], b[3], t[3], t[2]], [b[3], b[0], t[0], t[3]]]
                 for v in caras: msp_3d.add_3dface(v)
 
                 st.write("<br>", unsafe_allow_html=True)
@@ -148,7 +143,7 @@ with col2:
                 st.download_button("📥 DESCARGAR PROYECTO 3D", out.getvalue(), "ARCH_IA_PRO.dxf", use_container_width=True)
                 
         except Exception:
-            st.error("Error de lectura. Revisa el formato DXF.")
+            st.error("Error de lectura.")
 
 st.write("<br><br>", unsafe_allow_html=True)
-st.caption("alcaidearchia | Studio v6.9")
+st.caption("alcaidearchia | Studio v7.0")
