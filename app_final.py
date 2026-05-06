@@ -6,7 +6,7 @@ import io
 # Configuración de página
 st.set_page_config(page_title="ARCH-IA | Studio", page_icon="🏢", layout="wide")
 
-# --- CSS AVANZADO (COLORES DE FUENTE ACTUALIZADOS) ---
+# --- CSS AVANZADO (MANTENIENDO ESTÉTICA AL 100%) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap');
@@ -16,7 +16,7 @@ st.markdown("""
     h1, h2, h3 { font-family: 'Playfair Display', serif !important; color: #2C2C2C !important; }
     .subtitulo-normal { font-family: 'Inter', sans-serif !important; color: #6B6B6B !important; font-size: 1rem; font-style: normal !important; }
     
-    /* Color Verde Sage para el texto de las instrucciones en la Sidebar */
+    /* Color Verde Sage para el texto de las instrucciones */
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p, 
     [data-testid="stSidebar"] .stMarkdown, 
     [data-testid="stSidebar"] li { 
@@ -33,7 +33,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR (INSTRUCCIONES CON FUENTE VERDE) ---
+# --- SIDEBAR (CON INSTRUCCIÓN DE BARRA DE ALTURA) ---
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>ARCH-IA</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 0.8rem; color: #8A9A5B;'>STUDIO EDITION</p>", unsafe_allow_html=True)
@@ -45,16 +45,16 @@ with st.sidebar:
         st.write("""
         Para garantizar un sólido perfecto:
         * **Entidades:** Utiliza únicamente líneas (`LINE`) o polilíneas cerradas (`PLINE`).
-        * **Limpieza:** Elimina bloques, sombreados (hatches) o textos dentro del dibujo.
-        * **Geometría:** Asegúrate de que los vértices estén unidos (comando `JOIN`).
+        * **Limpieza:** Elimina bloques, sombreados o textos.
+        * **Geometría:** Asegúrate de unir vértices (comando `JOIN`).
         """)
         
     with st.expander("2. Sistema de Unidades"):
         st.write("""
         Este motor trabaja con **Escala Real 1:1**:
+        * **Barra de Configuración:** Utiliza el deslizador para definir la **altura deseada** (extrusión Z) de tu modelo antes de descargar.
         * Si tu proyecto está en metros, dibuja un cuadrado de 5x5 para obtener 25m².
-        * Evita escalas de impresión en el Model Space.
-        * El programa centrará automáticamente tu dibujo en el origen (0,0,0).
+        * El programa centrará el dibujo en el origen (0,0,0).
         """)
         
     with st.expander("3. Exportación DXF"):
@@ -62,15 +62,15 @@ with st.sidebar:
         **Obligatorio:**
         Al guardar en AutoCAD, selecciona:
         * **Tipo:** AutoCAD DXF.
-        * **Versión:** 2010 o 2013 (son las más estables para conversión de datos).
+        * **Versión:** 2010 o 2013.
         """)
 
     with st.expander("4. Flujo en el Modelo 3D"):
         st.write("""
         Tras la descarga:
         1. Abre el archivo en AutoCAD.
-        2. Activa el estilo visual **Conceptual** o **Sombreado**.
-        3. Mantén pulsada la tecla `Shift` + rueda del ratón para orbitar el volumen.
+        2. Activa el estilo visual **Conceptual**.
+        3. Usa `Shift` + rueda del ratón para orbitar.
         """)
     
     st.write("---")
@@ -134,4 +134,4 @@ with col2:
             st.error("Error de lectura.")
 
 st.write("<br><br>", unsafe_allow_html=True)
-st.caption("ARCH-IA Studio | v6.5")
+st.caption("ARCH-IA Studio | v6.6")
