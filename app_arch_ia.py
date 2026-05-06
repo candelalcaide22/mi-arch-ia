@@ -3,8 +3,8 @@ import ezdxf
 import io
 
 # 1. Configuración de la interfaz
-st.set_page_config(page_title="ARCH-IA 2.8", page_icon="🏗️")
-st.title("🏗️ ARCH-IA 2.8 - COMPATIBILIDAD TOTAL")
+st.set_page_config(page_title="ARCH-IA 2.9", page_icon="🏗️")
+st.title("🏗️ ARCH-IA 2.9 - LIMPIEZA ATÓMICA")
 
 # 2. Panel lateral
 st.sidebar.header("Configuración")
@@ -14,24 +14,28 @@ altura_muro = st.sidebar.slider("Altura de muros (m)", 1.0, 10.0, 2.5)
 uploaded_file = st.file_uploader("Sube tu archivo .dxf", type=["dxf"])
 
 if uploaded_file is not None:
-    with st.spinner('Procesando plano...'):
+    with st.spinner('Desintegrando errores binarios...'):
         try:
-            # LEER: Obtenemos los bytes y los pasamos a texto limpio
+            # LEER: Leemos el archivo en modo "bruto"
             bytes_data = uploaded_file.read()
-            text_data = bytes_data.decode('latin-1', errors='ignore')
             
-            # SOLUCIÓN AL ERROR 'readstr': 
-            # Creamos un "archivo virtual" (StringIO) y usamos ezdxf.read()
+            # --- LIMPIEZA ATÓMICA ---
+            # Filtramos el archivo byte a byte: solo dejamos caracteres de texto (ASCII)
+            # Esto elimina físicamente el error de la línea 11810
+            clean_bytes = bytes([b for b in bytes_data if b < 128])
+            
+            # Convertimos a texto seguro
+            text_data = clean_bytes.decode('ascii', errors='ignore')
+            
+            # Cargamos el documento desde el "texto puro"
             archivo_virtual = io.StringIO(text_data)
             doc = ezdxf.read(archivo_virtual)
-            
             msp = doc.modelspace()
             
             # Crear el nuevo documento 3D
             doc_3d = ezdxf.new('R2010')
             msp_3d = doc_3d.modelspace()
             
-            # Extraer líneas y polilíneas
             count = 0
             for e in msp.query('LINE LWPOLYLINE'):
                 if e.dxftype() == 'LINE':
@@ -44,22 +48,16 @@ if uploaded_file is not None:
                     count += 1
 
             if count > 0:
-                # GUARDAR: Generamos el resultado
                 out_buffer = io.StringIO()
                 doc_3d.write(out_buffer)
-                
-                st.success(f"¡CONSEGUIDO! Se han convertido {count} elementos.")
-                st.download_button(
-                    label="📥 Descargar Modelo 3D",
-                    data=out_buffer.getvalue(),
-                    file_name="modelo_3d_final.dxf",
-                    mime="application/dxf"
-                )
+                st.success(f"¡POR FIN! Se han rescatado {count} líneas.")
+                st.download_button("📥 Descargar Modelo 3D", out_buffer.getvalue(), "modelo_ia.dxf")
             else:
-                st.warning("No se detectaron líneas. Asegúrate de que el dibujo no sean bloques.")
+                st.error("Archivo limpio, pero no veo líneas. ¿Están en bloques?")
 
         except Exception as e:
-            st.error(f"Error técnico: {e}")
+            st.error(f"Error persistente: {e}")
+            st.info("💡 Si esto falla, el archivo está realmente dañado. Prueba con un dibujo nuevo y simple.")
 
 st.divider()
-st.caption("ARCH-IA v2.8 | Sin usar readstr para evitar errores de versión.")
+st.caption("ARCH-IA v2.9 | Filtrado byte a byte activado.")
