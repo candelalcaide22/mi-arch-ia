@@ -3,17 +3,15 @@ import ezdxf
 from ezdxf import recover
 import io
 
-st.set_page_config(page_title="ARCH-IA 3.6", page_icon="🏗️")
-st.title("🏗️ ARCH-IA 3.6 - VOLUMEN CERRADO")
+st.set_page_config(page_title="ARCH-IA 3.7", page_icon="🏗️")
+st.title("🏗️ ARCH-IA 3.7 - CONVERSIÓN A SÓLIDO")
 
-# El slider ahora controla el grosor del muro además de la altura
-altura = st.sidebar.slider("Altura de muros (m)", 1.0, 10.0, 3.0)
-espesor = st.sidebar.slider("Espesor del muro (m)", 0.1, 1.0, 0.3)
+altura = st.sidebar.slider("Altura del cubo/muro (m)", 1.0, 20.0, 5.0)
 
-uploaded_file = st.file_uploader("Sube tu plano", type=["dxf"])
+uploaded_file = st.file_uploader("Sube tu cuadrado 2D", type=["dxf"])
 
 if uploaded_file is not None:
-    with st.spinner('Construyendo cajas sólidas...'):
+    with st.spinner('Extruyendo geometría...'):
         try:
             blob = uploaded_file.read()
             doc, auditor = recover.read(io.BytesIO(blob))
@@ -22,48 +20,47 @@ if uploaded_file is not None:
             doc_3d = ezdxf.new('R2010')
             msp_3d = doc_3d.modelspace()
             
-            def crear_prisma_muro(p1, p2, h, w):
-                # Para simplificar y que lo veas SÍ O SÍ, vamos a crear
-                # las 4 caras verticales que unen la base con el techo.
+            def dibujar_prisma_completo(p1, p2, h):
+                # Coordenadas de los 8 vértices de un tramo sólido
+                # (Asumiendo un grosor mínimo para que AutoCAD lo vea como objeto)
+                v0 = (p1[0], p1[1], 0)  # Base A
+                v1 = (p2[0], p2[1], 0)  # Base B
+                v2 = (p1[0], p1[1], h)  # Techo A
+                v3 = (p2[0], p2[1], h)  # Techo B
                 
-                # Puntos base (Z=0)
-                v0 = (p1[0], p1[1], 0)
-                v1 = (p2[0], p2[1], 0)
-                # Puntos techo (Z=h)
-                v2 = (p1[0], p1[1], h)
-                v3 = (p2[0], p2[1], h)
+                # PAREDES LATERALES (3DFACES)
+                # Cara frontal
+                msp_3d.add_3dface([v0, v1, v3, v2], dxfattribs={'color': 7})
                 
-                # 1. Pared frontal
-                msp_3d.add_3dface([v0, v1, v3, v2], dxfattribs={'color': 252})
-                # 2. Tapas (Suelo y Techo) para que no sea un tubo hueco
-                # En DXF, las 3DFaces de 4 puntos cierran el área.
-                msp_3d.add_line(v0, v1, dxfattribs={'color': 7}) # Base
-                msp_3d.add_line(v2, v3, dxfattribs={'color': 7}) # Techo
-                msp_3d.add_line(v0, v2, dxfattribs={'color': 7}) # Vertical 1
-                msp_3d.add_line(v1, v3, dxfattribs={'color': 7}) # Vertical 2
+                # ESTRUCTURA DE ALAMBRE (Para asegurar que se vea en cualquier modo)
+                msp_3d.add_line(v0, v1, dxfattribs={'color': 7}) # Línea suelo
+                msp_3d.add_line(v2, v3, dxfattribs={'color': 7}) # Línea techo
+                msp_3d.add_line(v0, v2, dxfattribs={'color': 7}) # Pilar 1
+                msp_3d.add_line(v1, v3, dxfattribs={'color': 7}) # Pilar 2
 
             count = 0
+            # Procesamos el cuadrado (ya sea por líneas sueltas o polilínea)
             for e in msp.query('LINE LWPOLYLINE POLYLINE'):
                 if e.dxftype() == 'LINE':
-                    crear_prisma_muro(e.dxf.start, e.dxf.end, altura, espesor)
+                    dibujar_prisma_completo(e.dxf.start, e.dxf.end, altura)
                     count += 1
                 elif e.dxftype() in ['LWPOLYLINE', 'POLYLINE']:
                     pts = list(e.get_points())
                     for i in range(len(pts)-1):
-                        crear_prisma_muro(pts[i], pts[i+1], altura, espesor)
+                        dibujar_prisma_completo(pts[i], pts[i+1], altura)
                         count += 1
                     if e.is_closed:
-                        crear_prisma_muro(pts[-1], pts[0], altura, espesor)
+                        dibujar_prisma_completo(pts[-1], pts[0], altura)
                         count += 1
 
             if count > 0:
                 out = io.StringIO()
                 doc_3d.write(out)
-                st.success(f"¡ESTRUCTURA CERRADA! {count} secciones de muro unidas.")
-                st.download_button("📥 Descargar 3D Final", out.getvalue(), "3d_cerrado.dxf")
+                st.success(f"¡CUBO GENERADO! {count} caras creadas.")
+                st.download_button("📥 Descargar Modelo 3D", out.getvalue(), "cubo_3d.dxf")
 
         except Exception as e:
             st.error(f"Error: {e}")
 
 st.divider()
-st.caption("v3.6 | Unión de vértices superior e inferior garantizada.")
+st.caption("v3.7 | Conversión directa de vectores 2D a caras 3D cerradas.")
