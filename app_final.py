@@ -6,56 +6,62 @@ import io
 # Configuración de página
 st.set_page_config(page_title="ARCH-IA | Studio", page_icon="🏢", layout="wide")
 
-# --- ESTILO CSS REVISADO (Sin errores de superposición) ---
+# --- CSS AVANZADO: LIMPIEZA PROFUNDA ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap');
 
-    /* Fondo general */
-    .stApp {
-        background-color: #FDFCF0;
-    }
+    /* 1. Fondo y Base */
+    .stApp { background-color: #FDFCF0; }
     
-    /* Títulos con Playfair Display */
-    h1, h2, h3, [data-testid="stHeader"] {
+    /* 2. Barra superior (Header) en Verde Sage */
+    header[data-testid="stHeader"] {
+        background-color: #8A9A5B !important;
+    }
+    header[data-testid="stHeader"] * {
+        color: white !important;
+    }
+
+    /* 3. Tipografías */
+    h1, h2, h3 {
         font-family: 'Playfair Display', serif !important;
         color: #2C2C2C !important;
     }
-    
-    /* Texto general e Interfaz */
-    .stMarkdown, p, label {
+    .subtitulo-normal {
         font-family: 'Inter', sans-serif !important;
+        color: #6B6B6B !important;
+        font-size: 1rem;
+        font-style: normal !important; /* Quita la cursiva */
+    }
+
+    /* 4. Limpieza de elementos "fantasmas" a la izquierda */
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
         color: #4A4A4A !important;
     }
+    /* Oculta textos de accesibilidad que se pisan */
+    span[data-testid="stWidgetLabel"] > div > div > p { display: none; } 
+    .aria-label, [aria-hidden="true"] { display: none !important; }
 
-    /* Ajuste específico para evitar que las letras se pisen en la Sidebar */
-    [data-testid="stSidebar"] * {
-        font-family: 'Inter', sans-serif !important;
-    }
-
-    /* Botón Sage personalizado - Limpio */
+    /* 5. Botón Sage */
     div.stButton > button {
         background-color: #8A9A5B !important;
         color: white !important;
-        border-radius: 2px !important;
+        border-radius: 0px !important;
         border: none !important;
-        padding: 0.6rem 1rem !important;
+        padding: 12px !important;
         width: 100%;
-        font-family: 'Inter', sans-serif !important;
         text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    div.stButton > button:hover {
-        background-color: #76844D !important;
+        letter-spacing: 1.5px;
     }
 
-    /* Barra lateral */
+    /* 6. Barra lateral limpia */
     [data-testid="stSidebar"] {
         background-color: #F7F5E6 !important;
     }
+    /* Quitar iconos de expanders para evitar que se pisen */
+    [data-testid="stExpander"] svg { display: none !important; }
 
-    /* Métricas */
+    /* 7. Métricas */
     [data-testid="stMetricValue"] {
         font-family: 'Playfair Display', serif !important;
         color: #8A9A5B !important;
@@ -65,26 +71,28 @@ st.markdown("""
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h2 style='text-align: center; color: #2C2C2C;'>ARCH-IA</h2>", unsafe_allow_html=True)
-    st.markdown("---")
-    st.write("### 📖 Guía Rápida")
-    with st.expander("📝 Formato", expanded=False):
-        st.write("Usa DXF versión 2010 o 2013.")
-    with st.expander("📐 Escala"):
-        st.write("Dibuja en unidades reales en AutoCAD.")
-    with st.expander("🧱 3D"):
-        st.write("Visualiza en modo Conceptual.")
+    st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>ARCH-IA</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 0.8rem;'>STUDIO EDITION</p>", unsafe_allow_html=True)
+    st.write("---")
+    st.write("### Instrucciones")
+    with st.expander("Formato"):
+        st.write("DXF 2010 / 2013")
+    with st.expander("Escala"):
+        st.write("Unidades reales (1=1m)")
+    with st.expander("Visualización"):
+        st.write("Modo Conceptual")
 
 # --- CUERPO PRINCIPAL ---
 st.title("The Architectural Conversion Tool")
-st.markdown("_Geometría simplificada para proyectos de arquitectura._")
-st.write("") # Espaciador
+# El subtítulo ahora es letra normal (clase subtitulo-normal)
+st.markdown('<p class="subtitulo-normal">Geometría simplificada para proyectos de arquitectura.</p>', unsafe_allow_html=True)
+st.write("<br>", unsafe_allow_html=True)
 
 col1, col2 = st.columns([1, 1.2], gap="large")
 
 with col1:
     st.markdown("### Configuración")
-    altura_h = st.slider("Altura de Extrusión (unidades)", 0.1, 50.0, 3.5)
+    altura_h = st.slider("Altura de Extrusión", 0.1, 50.0, 3.5)
     uploaded_file = st.file_uploader("Subir plano DXF", type=["dxf"])
 
 with col2:
@@ -109,7 +117,7 @@ with col2:
                 c1.metric("Ancho", f"{ancho:.2f}")
                 c2.metric("Largo", f"{largo:.2f}")
 
-                # Lógica de construcción del cubo
+                # Generación 3D
                 doc_3d = ezdxf.new('R2010')
                 msp_3d = doc_3d.modelspace()
                 h = altura_h
@@ -125,13 +133,13 @@ with col2:
                 ]
                 for v in caras: msp_3d.add_3dface(v)
 
-                st.write("")
+                st.write("<br>", unsafe_allow_html=True)
                 out = io.StringIO()
                 doc_3d.write(out)
-                st.download_button("📥 DESCARGAR PROYECTO 3D", out.getvalue(), "ARCH_IA_MODEL.dxf", use_container_width=True)
+                st.download_button("📥 DESCARGAR PROYECTO 3D", out.getvalue(), "ARCH_IA_PRO.dxf", use_container_width=True)
                 
         except Exception:
-            st.error("Error al leer el archivo. Revisa el formato.")
+            st.error("Error de lectura.")
 
-st.write("---")
-st.caption("ARCH-IA Studio | v6.2")
+st.write("<br><br>", unsafe_allow_html=True)
+st.caption("ARCH-IA Studio | v6.3")
