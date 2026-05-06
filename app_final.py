@@ -3,43 +3,84 @@ import ezdxf
 from ezdxf import recover
 import io
 
-st.set_page_config(page_title="ARCH-IA PRO", page_icon="🏢", layout="wide")
+# Configuración de página
+st.set_page_config(page_title="ARCH-IA | Studio", page_icon="🏢", layout="wide")
 
-# --- MENÚ DE INSTRUCCIONES EN LA SIDEBAR ---
+# --- ESTILO CSS PERSONALIZADO (Look & Feel) ---
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap');
+
+    /* Fondo y contenedores */
+    .stApp {
+        background-color: #FDFCF0; /* Crema discreto */
+    }
+    
+    /* Tipografía */
+    h1, h2, h3 {
+        font-family: 'Playfair Display', serif !important;
+        color: #2C2C2C !important;
+        font-weight: 700 !important;
+    }
+    
+    p, span, label {
+        font-family: 'Inter', sans-serif !important;
+        color: #4A4A4A !important;
+    }
+
+    /* Botones y Sliders (Verde Sage) */
+    div.stButton > button {
+        background-color: #8A9A5B !important; /* Verde salvia */
+        color: white !important;
+        border-radius: 0px !important; /* Estética minimalista cuadrada */
+        border: none !important;
+        padding: 10px 24px !important;
+        font-family: 'Inter', sans-serif !important;
+        transition: 0.3s;
+    }
+    
+    div.stButton > button:hover {
+        background-color: #76844D !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* Sidebar con estilo limpio */
+    [data-testid="stSidebar"] {
+        background-color: #F7F5E6 !important;
+        border-right: 1px solid #E0DDD0;
+    }
+
+    /* Input box y métricas */
+    [data-testid="stMetricValue"] {
+        font-family: 'Playfair Display', serif !important;
+        color: #8A9A5B !important;
+    }
+    </style>
+    """, unsafe_allow_stdio=True)
+
+# --- SIDEBAR (INSTRUCCIONES) ---
 with st.sidebar:
-    st.title("📖 Guía de Usuario")
-    with st.expander("1. Preparación en AutoCAD", expanded=True):
-        st.write("""
-        * **Dibujo:** Usa líneas (`LINE`) o polilíneas (`PLINE`).
-        * **Escala:** Dibuja en unidades reales (ej: 5x5 para 5 metros).
-        * **Ubicación:** Procura dibujar cerca del origen (0,0).
-        """)
-    
-    with st.expander("2. Formato de Guardado"):
-        st.warning("⚠️ **MUY IMPORTANTE**")
-        st.write("""
-        El archivo debe guardarse obligatoriamente como:
-        * **DXF de intercambio.**
-        * Versión **AutoCAD 2010** o **2013**.
-        """)
-    
-    with st.expander("3. Visualización 3D"):
-        st.write("""
-        Una vez descargues el archivo:
-        1. Abre en AutoCAD.
-        2. Cambia a vista **Conceptual** o **Sombreado**.
-        3. Usa `Shift + Rueda` para orbitar.
-        """)
+    st.markdown("# ARCH-IA")
+    st.markdown("---")
+    st.markdown("### 📖 Guía de Preparación")
+    with st.expander("📝 AutoCAD Setup", expanded=False):
+        st.write("Dibuja tu perímetro con LINE o PLINE.")
+    with st.expander("💾 Formato de Guardado"):
+        st.write("Exporta como **DXF 2010**.")
+    with st.expander("🔄 Visualización"):
+        st.write("Usa modo **Conceptual** y orbita.")
 
 # --- CUERPO PRINCIPAL ---
-st.title("🏗️ ARCH-IA PRO: Conversor 2D a 3D")
-st.subheader("Transforma tus planos planos en volúmenes profesionales")
+st.title("The Architectural Conversion Tool")
+st.markdown("_Elevando planos 2D a volúmenes habitables._")
+st.markdown("---")
 
-col1, col2 = st.columns([1, 1])
+col1, col2 = st.columns([1, 1.2], gap="large")
 
 with col1:
-    altura_h = st.number_input("Altura del volumen (unidades)", min_value=0.1, max_value=100.0, value=3.0)
-    uploaded_file = st.file_uploader("Sube tu archivo DXF corregido", type=["dxf"])
+    st.subheader("Configuración")
+    altura_h = st.slider("Altura de Extrusión (m)", 0.1, 50.0, 3.5)
+    uploaded_file = st.file_uploader("Arrastra aquí tu plano DXF", type=["dxf"])
 
 with col2:
     if uploaded_file is not None:
@@ -58,11 +99,12 @@ with col2:
                 x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
                 ancho, largo = x1 - x0, y1 - y0
 
-                st.success(f"✅ Archivo leído correctamente")
-                st.metric("Ancho detectado", f"{ancho:.2f} m")
-                st.metric("Largo detectado", f"{largo:.2f} m")
+                st.subheader("Análisis de Geometría")
+                m1, m2 = st.columns(2)
+                m1.metric("Ancho", f"{ancho:.2f} u")
+                m2.metric("Largo", f"{largo:.2f} u")
 
-                # Generación del 3D
+                # Generación 3D
                 doc_3d = ezdxf.new('R2010')
                 msp_3d = doc_3d.modelspace()
                 h = altura_h
@@ -78,9 +120,13 @@ with col2:
                 ]
                 for v in caras: msp_3d.add_3dface(v)
 
+                st.markdown("---")
                 out = io.StringIO()
                 doc_3d.write(out)
-                st.download_button("📥 DESCARGAR MODELO PROFESIONAL", out.getvalue(), "ARCH_IA_PRO.dxf", use_container_width=True)
+                st.download_button("📥 DESCARGAR MODELO 3D", out.getvalue(), "ARCH_IA_PRO.dxf", use_container_width=True)
                 
         except Exception as e:
-            st.error(f"❌ Error al procesar: Asegúrate de que el DXF sea versión 2010/2013.")
+            st.error("Error en lectura. Verifica el formato DXF 2010.")
+
+st.markdown("---")
+st.caption("ARCH-IA Studio | v6.0 | Estética Minimalista")
