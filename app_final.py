@@ -6,85 +6,70 @@ import io
 # Configuración de página
 st.set_page_config(page_title="ARCH-IA | Studio", page_icon="🏢", layout="wide")
 
-# --- CSS AVANZADO: LIMPIEZA PROFUNDA ---
+# --- CSS AVANZADO: LIMPIEZA Y ESTÉTICA (INTACTO) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap');
-
-    /* 1. Fondo y Base */
     .stApp { background-color: #FDFCF0; }
-    
-    /* 2. Barra superior (Header) en Verde Sage */
-    header[data-testid="stHeader"] {
-        background-color: #8A9A5B !important;
-    }
-    header[data-testid="stHeader"] * {
-        color: white !important;
-    }
-
-    /* 3. Tipografías */
-    h1, h2, h3 {
-        font-family: 'Playfair Display', serif !important;
-        color: #2C2C2C !important;
-    }
-    .subtitulo-normal {
-        font-family: 'Inter', sans-serif !important;
-        color: #6B6B6B !important;
-        font-size: 1rem;
-        font-style: normal !important; /* Quita la cursiva */
-    }
-
-    /* 4. Limpieza de elementos "fantasmas" a la izquierda */
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-        color: #4A4A4A !important;
-    }
-    /* Oculta textos de accesibilidad que se pisan */
+    header[data-testid="stHeader"] { background-color: #8A9A5B !important; }
+    header[data-testid="stHeader"] * { color: white !important; }
+    h1, h2, h3 { font-family: 'Playfair Display', serif !important; color: #2C2C2C !important; }
+    .subtitulo-normal { font-family: 'Inter', sans-serif !important; color: #6B6B6B !important; font-size: 1rem; font-style: normal !important; }
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: #4A4A4A !important; }
     span[data-testid="stWidgetLabel"] > div > div > p { display: none; } 
     .aria-label, [aria-hidden="true"] { display: none !important; }
-
-    /* 5. Botón Sage */
-    div.stButton > button {
-        background-color: #8A9A5B !important;
-        color: white !important;
-        border-radius: 0px !important;
-        border: none !important;
-        padding: 12px !important;
-        width: 100%;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-    }
-
-    /* 6. Barra lateral limpia */
-    [data-testid="stSidebar"] {
-        background-color: #F7F5E6 !important;
-    }
-    /* Quitar iconos de expanders para evitar que se pisen */
+    div.stButton > button { background-color: #8A9A5B !important; color: white !important; border-radius: 0px !important; border: none !important; padding: 12px !important; width: 100%; text-transform: uppercase; letter-spacing: 1.5px; }
+    [data-testid="stSidebar"] { background-color: #F7F5E6 !important; }
     [data-testid="stExpander"] svg { display: none !important; }
-
-    /* 7. Métricas */
-    [data-testid="stMetricValue"] {
-        font-family: 'Playfair Display', serif !important;
-        color: #8A9A5B !important;
-    }
+    [data-testid="stMetricValue"] { font-family: 'Playfair Display', serif !important; color: #8A9A5B !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
+# --- SIDEBAR (INSTRUCCIONES DESARROLLADAS) ---
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>ARCH-IA</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 0.8rem;'>STUDIO EDITION</p>", unsafe_allow_html=True)
     st.write("---")
-    st.write("### Instrucciones")
-    with st.expander("Formato"):
-        st.write("DXF 2010 / 2013")
-    with st.expander("Escala"):
-        st.write("Unidades reales (1=1m)")
-    with st.expander("Visualización"):
-        st.write("Modo Conceptual")
+    
+    st.write("### 📖 Protocolo de Trabajo")
+    
+    with st.expander("1. Preparación del Plano", expanded=True):
+        st.write("""
+        Para garantizar un sólido perfecto:
+        * **Entidades:** Utiliza únicamente líneas (`LINE`) o polilíneas cerradas (`PLINE`).
+        * **Limpieza:** Elimina bloques, sombreados (hatches) o textos dentro del dibujo.
+        * **Geometría:** Asegúrate de que los vértices estén unidos (comando `JOIN`).
+        """)
+        
+    with st.expander("2. Sistema de Unidades"):
+        st.write("""
+        Este motor trabaja con **Escala Real 1:1**:
+        * Si tu proyecto está en metros, dibuja un cuadrado de 5x5 para obtener 25m².
+        * Evita escalas de impresión en el Model Space.
+        * El programa centrará automáticamente tu dibujo en el origen (0,0,0).
+        """)
+        
+    with st.expander("3. Exportación DXF"):
+        st.info("**Obligatorio:**")
+        st.write("""
+        Al guardar en AutoCAD, selecciona:
+        * **Tipo:** AutoCAD DXF.
+        * **Versión:** 2010 o 2013 (son las más estables para conversión de datos).
+        """)
 
-# --- CUERPO PRINCIPAL ---
+    with st.expander("4. Flujo en el Modelo 3D"):
+        st.write("""
+        Tras la descarga:
+        1. Abre el archivo en AutoCAD.
+        2. Activa el estilo visual **Conceptual** o **Sombreado**.
+        3. Mantén pulsada la tecla `Shift` + rueda del ratón para orbitar el volumen.
+        """)
+    
+    st.write("---")
+    st.caption("Soporte: studio@arch-ia.com")
+
+# --- CUERPO PRINCIPAL (SIN CAMBIOS) ---
 st.title("The Architectural Conversion Tool")
-# El subtítulo ahora es letra normal (clase subtitulo-normal)
 st.markdown('<p class="subtitulo-normal">Geometría simplificada para proyectos de arquitectura.</p>', unsafe_allow_html=True)
 st.write("<br>", unsafe_allow_html=True)
 
@@ -117,7 +102,6 @@ with col2:
                 c1.metric("Ancho", f"{ancho:.2f}")
                 c2.metric("Largo", f"{largo:.2f}")
 
-                # Generación 3D
                 doc_3d = ezdxf.new('R2010')
                 msp_3d = doc_3d.modelspace()
                 h = altura_h
@@ -142,4 +126,4 @@ with col2:
             st.error("Error de lectura.")
 
 st.write("<br><br>", unsafe_allow_html=True)
-st.caption("ARCH-IA Studio | v6.3")
+st.caption("ARCH-IA Studio | v6.4")
