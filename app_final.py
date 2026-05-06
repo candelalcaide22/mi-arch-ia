@@ -3,20 +3,22 @@ import ezdxf
 from ezdxf import recover
 import io
 
-# 1. Configuración de página
+# 1. Configuración de página - alcaidearchia marca
 st.set_page_config(
     page_title="alcaidearchia | Studio", 
     page_icon="🏢", 
     layout="wide"
 )
 
-# --- CSS (v7.2 + Estilo de Input Numérico) ---
+# --- CSS (MANTENIDO INTACTO) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap');
+    
     .stApp { background-color: #FDFCF0; }
     header[data-testid="stHeader"] { background-color: #8A9A5B !important; }
     header[data-testid="stHeader"] * { color: white !important; }
+    
     h1, h2, h3 { font-family: 'Playfair Display', serif !important; color: #2C2C2C !important; }
     .subtitulo-normal { font-family: 'Inter', sans-serif !important; color: #6B6B6B !important; font-size: 1rem; }
     
@@ -27,16 +29,15 @@ st.markdown("""
     .aclaracion-verde { 
         color: #8A9A5B !important; 
         font-family: 'Inter', sans-serif !important;
-        margin-bottom: 5px;
     }
     
-    /* Selector de formato */
+    /* Etiquetas de pestañas/radio: Gris Oscuro */
     div[data-testid="stRadio"] label p {
         font-family: sans-serif !important;
         color: #333333 !important;
         font-weight: 500 !important;
     }
-
+    
     /* Estilo para el campo de entrada numérica */
     div[data-testid="stNumberInput"] {
         background-color: white;
@@ -45,27 +46,67 @@ st.markdown("""
 
     span[data-testid="stWidgetLabel"] > div > div > p { display: none; } 
     .aria-label, [aria-hidden="true"] { display: none !important; }
-    div.stButton > button { background-color: #8A9A5B !important; color: white !important; border-radius: 0px !important; border: none !important; padding: 12px !important; width: 100%; text-transform: uppercase; letter-spacing: 1.5px; }
+    
+    div.stButton > button { 
+        background-color: #8A9A5B !important; 
+        color: white !important; 
+        border-radius: 0px !important; 
+        border: none !important; 
+        padding: 12px !important; 
+        width: 100%; 
+        text-transform: uppercase; 
+        letter-spacing: 1.5px; 
+    }
+    
     [data-testid="stSidebar"] { background-color: #F7F5E6 !important; }
     [data-testid="stExpander"] svg { display: none !important; }
     [data-testid="stMetricValue"] { font-family: 'Playfair Display', serif !important; color: #8A9A5B !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
+# --- SIDEBAR (INSTRUCCIONES COMPLETAS RESTAURADAS) ---
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>alcaidearchia</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 0.8rem; color: #8A9A5B;'>ESTUDIO DE ARQUITECTURA</p>", unsafe_allow_html=True)
     st.write("---")
+    
     st.write("### 📖 Protocolo de Trabajo")
+    
     with st.expander("1. Preparación del Plano", expanded=True):
-        st.write("Líneas o polilíneas unidas (JOIN). Dibujo limpio sin bloques.")
+        st.write("""
+        Para garantizar un sólido perfecto:
+        * **Entidades:** Utiliza únicamente líneas (`LINE`) o polilíneas cerradas (`PLINE`).
+        * **Limpieza:** Elimina bloques, sombreados (hatches) o textos dentro del dibujo.
+        * **Geometría:** Asegúrate de que los vértices estén unidos (comando `JOIN`).
+        """)
+        
     with st.expander("2. Sistema de Unidades"):
-        st.write("Escala 1:1. **Escribe la altura exacta** en el recuadro de configuración.")
+        st.write("""
+        Este motor trabaja con **Escala Real 1:1**:
+        * **Configuración de Altura:** Escribe la **altura exacta** (Z) en el recuadro central para definir el volumen.
+        * Si tu proyecto está en metros, dibuja un cuadrado de 5x5 para obtener 25m².
+        * Evita escalas de impresión en el Model Space.
+        * El programa centrará automáticamente tu dibujo en el origen (0,0,0).
+        """)
+        
     with st.expander("3. Exportación DXF"):
-        st.write("Guardar como AutoCAD DXF 2010 o 2013.")
+        st.write("""
+        **Obligatorio:**
+        Al guardar en AutoCAD, selecciona:
+        * **Tipo:** AutoCAD DXF.
+        * **Versión:** 2010 o 2013 (son las más estables para conversión de datos).
+        """)
+
+    with st.expander("4. Flujo en el Modelo 3D"):
+        st.write("""
+        Tras la descarga:
+        1. Abre el archivo en AutoCAD.
+        2. Activa el estilo visual **Conceptual** o **Sombreado**.
+        3. Mantén pulsada la tecla `Shift` + rueda del ratón para orbitar el volumen.
+        """)
+    
     st.write("---")
-    st.caption("alcaidearchia | Studio v7.3")
+    st.caption("Soporte: studio@arch-ia.com")
 
 # --- CUERPO PRINCIPAL ---
 st.title("La Herramienta de Conversión Arquitectónica")
@@ -76,15 +117,17 @@ col1, col2 = st.columns([1, 1.2], gap="large")
 
 with col1:
     st.markdown("### Configuración del Proyecto")
+    
     formato = st.radio(
         "Selecciona el formato de entrada:",
         ("AutoCAD (DXF)", "Documento (PDF)", "Nube de puntos (XYZ)", "Imagen (PNG/JPG)"),
         horizontal=True
     )
+    
     st.write("<br>", unsafe_allow_html=True)
     st.markdown('<p class="aclaracion-verde">Indica la altura exacta (Z) para la extrusión:</p>', unsafe_allow_html=True)
     
-    # CAMBIO CRÍTICO: De Slider a Number Input para precisión total
+    # Campo numérico para precisión absoluta
     altura_h = st.number_input(
         "Altura del Cubo (m)", 
         min_value=0.000, 
@@ -97,7 +140,7 @@ with col1:
     if formato == "AutoCAD (DXF)":
         uploaded_file = st.file_uploader("Subir plano DXF", type=["dxf"])
     else:
-        st.info(f"Módulo para **{formato}** en desarrollo.")
+        st.info(f"El módulo para **{formato}** se activará próximamente.")
         uploaded_file = None
 
 with col2:
@@ -106,6 +149,7 @@ with col2:
             blob = uploaded_file.read()
             doc, auditor = recover.read(io.BytesIO(blob))
             msp = doc.modelspace()
+            
             puntos = []
             for e in msp.query('LINE LWPOLYLINE'):
                 if e.dxftype() == 'LINE': puntos.extend([e.dxf.start, e.dxf.end])
@@ -125,17 +169,24 @@ with col2:
                 msp_3d = doc_3d.modelspace()
                 h = altura_h
                 nx0, nx1, ny0, ny1 = 0, ancho, 0, largo
+                
                 b = [(nx0,ny0,0), (nx1,ny0,0), (nx1,ny1,0), (nx0,ny1,0)]
                 t = [(nx0,ny0,h), (nx1,ny0,h), (nx1,ny1,h), (nx0,ny1,h)]
-                caras = [[b[0], b[1], b[2], b[3]], [t[0], t[1], t[2], t[3]], [b[0], b[1], t[1], t[0]], [b[1], b[2], t[2], t[1]], [b[2], b[3], t[3], t[2]], [b[3], b[0], t[0], t[3]]]
+
+                caras = [
+                    [b[0], b[1], b[2], b[3]], [t[0], t[1], t[2], t[3]],
+                    [b[0], b[1], t[1], t[0]], [b[1], b[2], t[2], t[1]],
+                    [b[2], b[3], t[3], t[2]], [b[3], b[0], t[0], t[3]]
+                ]
                 for v in caras: msp_3d.add_3dface(v)
 
                 st.write("<br>", unsafe_allow_html=True)
                 out = io.StringIO()
                 doc_3d.write(out)
                 st.download_button("📥 DESCARGAR PROYECTO 3D", out.getvalue(), f"ARCH_IA_{ancho:.3f}x{largo:.3f}_h{h:.3f}.dxf", use_container_width=True)
+                
         except Exception:
             st.error("Error de lectura.")
 
 st.write("<br><br>", unsafe_allow_html=True)
-st.caption("alcaidearchia | Studio v7.3")
+st.caption("alcaidearchia | Studio v7.4")
