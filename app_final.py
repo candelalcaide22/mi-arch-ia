@@ -3,72 +3,71 @@ import ezdxf
 from ezdxf import recover
 import io
 
-st.set_page_config(page_title="ARCH-IA 3.8", page_icon="🏗️")
-st.title("🏗️ ARCH-IA 3.8 - GENERADOR DE CUBOS REALES")
+st.set_page_config(page_title="ARCH-IA 4.0", page_icon="🧊")
+st.title("🧊 ARCH-IA 4.0 - GENERADOR DE CUBOS")
 
+# Queremos que el usuario elija la altura
 altura = st.sidebar.slider("Altura del cubo (m)", 1.0, 20.0, 5.0)
 
 uploaded_file = st.file_uploader("Sube tu cuadrado 2D", type=["dxf"])
 
 if uploaded_file is not None:
-    with st.spinner('Fabricando sólidos...'):
+    with st.spinner('Construyendo sólido...'):
         try:
             blob = uploaded_file.read()
             doc, auditor = recover.read(io.BytesIO(blob))
             msp = doc.modelspace()
             
+            # Nuevo archivo 3D
             doc_3d = ezdxf.new('R2010')
             msp_3d = doc_3d.modelspace()
             
-            def crear_cubo_solido(p1, p2, h):
-                # Un muro o cubo necesita un pequeño ancho para ser "sólido"
-                # Vamos a crear un prisma rectangular a partir de la línea
-                ancho = 0.5 
-                
-                # Definimos los 8 vértices del cubo
-                # Base
-                b1 = (p1[0], p1[1], 0)
-                b2 = (p2[0], p2[1], 0)
-                # Techo
-                t1 = (p1[0], p1[1], h)
-                t2 = (p2[0], p2[1], h)
-
-                # Creamos las 6 CARAS para cerrar el cubo
-                # Pared frontal
-                msp_3d.add_3dface([b1, b2, t2, t1], dxfattribs={'color': 7})
-                # Suelo
-                msp_3d.add_3dface([b1, b2, (p2[0]+0.1, p2[1]+0.1, 0), (p1[0]+0.1, p1[1]+0.1, 0)], dxfattribs={'color': 7})
-                # Techo
-                msp_3d.add_3dface([t1, t2, (p2[0]+0.1, p2[1]+0.1, h), (p1[0]+0.1, p1[1]+0.1, h)], dxfattribs={'color': 7})
-                
-                # Unimos los vértices con líneas de estructura (para que lo veas sí o sí)
-                msp_3d.add_line(b1, t1, dxfattribs={'color': 7})
-                msp_3d.add_line(b2, t2, dxfattribs={'color': 7})
-                msp_3d.add_line(b1, b2, dxfattribs={'color': 7})
-                msp_3d.add_line(t1, t2, dxfattribs={'color': 7})
-
-            count = 0
-            for e in msp.query('LINE LWPOLYLINE POLYLINE'):
+            # 1. Encontrar los límites de tu cuadrado (Min y Max)
+            todos_los_puntos = []
+            for e in msp.query('LINE LWPOLYLINE'):
                 if e.dxftype() == 'LINE':
-                    crear_cubo_solido(e.dxf.start, e.dxf.end, altura)
-                    count += 1
-                elif e.dxftype() in ['LWPOLYLINE', 'POLYLINE']:
-                    pts = list(e.get_points())
-                    for i in range(len(pts)-1):
-                        crear_cubo_solido(pts[i], pts[i+1], altura)
-                        count += 1
-                    if e.is_closed:
-                        crear_cubo_solido(pts[-1], pts[0], altura)
-                        count += 1
+                    todos_los_puntos.extend([e.dxf.start, e.dxf.end])
+                else:
+                    todos_los_puntos.extend(e.get_points())
+            
+            if todos_los_puntos:
+                xs = [p[0] for p in todos_los_puntos]
+                ys = [p[1] for p in todos_los_puntos]
+                xmin, xmax = min(xs), max(xs)
+                ymin, ymax = min(ys), max(ys)
 
-            if count > 0:
+                # 2. Definir los 8 vértices del cubo
+                # Base (Z=0)
+                v0 = (xmin, ymin, 0)
+                v1 = (xmax, ymin, 0)
+                v2 = (xmax, ymax, 0)
+                v3 = (xmin, ymax, 0)
+                # Techo (Z=altura)
+                v4 = (xmin, ymin, altura)
+                v5 = (xmax, ymin, altura)
+                v6 = (xmax, ymax, altura)
+                v7 = (xmin, ymax, altura)
+
+                # 3. Crear las 6 caras del cubo (esto lo hace sólido)
+                # Paredes laterales
+                msp_3d.add_3dface([v0, v1, v5, v4]) # Frontal
+                msp_3d.add_3dface([v1, v2, v6, v5]) # Derecha
+                msp_3d.add_3dface([v2, v3, v7, v6]) # Trasera
+                msp_3d.add_3dface([v3, v0, v4, v7]) # Izquierda
+                # Tapas
+                msp_3d.add_3dface([v0, v1, v2, v3]) # Suelo
+                msp_3d.add_3dface([v4, v5, v6, v7]) # Techo
+
+                st.success("¡CUBO 3D CREADO!")
+                
                 out = io.StringIO()
                 doc_3d.write(out)
-                st.success(f"¡CUBO CERRADO! Se han procesado {count} segmentos.")
-                st.download_button("📥 Descargar Cubo 3D", out.getvalue(), "cubo_final.dxf")
+                st.download_button("📥 DESCARGAR CUBO", out.getvalue(), "cubo_3d.dxf")
+            else:
+                st.error("No detecto el cuadrado en tu archivo.")
 
         except Exception as e:
             st.error(f"Error: {e}")
 
 st.divider()
-st.caption("v3.8 | Forzado de caras superior e inferior.")
+st.caption("v4.0 | Generación de prisma rectangular cerrado.")
