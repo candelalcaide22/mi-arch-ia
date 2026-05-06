@@ -3,8 +3,8 @@ import ezdxf
 from ezdxf import recover
 import io
 
-st.set_page_config(page_title="ARCH-IA 4.8", page_icon="🧊")
-st.title("🧊 ARCH-IA 4.8 - CUBO SIN DIAGONALES")
+st.set_page_config(page_title="ARCH-IA 4.9", page_icon="🧊")
+st.title("🧊 ARCH-IA 4.9 - SOLUCIÓN DEFINITIVA")
 
 altura_h = st.sidebar.slider("Altura (m)", 0.1, 50.0, 5.0)
 uploaded_file = st.file_uploader("Sube tu cuadrado", type=["dxf"])
@@ -25,37 +25,29 @@ if uploaded_file is not None:
             x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
             
             ancho, largo = x1 - x0, y1 - y0
-            # Centramos en el origen
             nx0, nx1, ny0, ny1 = 0, ancho, 0, largo
 
             doc_3d = ezdxf.new('R2010')
             msp_3d = doc_3d.modelspace()
             
             h = altura_h
-            # Definimos los 8 puntos del cubo
-            v = [
-                (nx0, ny0, 0), (nx1, ny0, 0), (nx1, ny1, 0), (nx0, ny1, 0), # Base (0-3)
-                (nx0, ny0, h), (nx1, ny0, h), (nx1, ny1, h), (nx0, ny1, h)  # Techo (4-7)
-            ]
+            # Definimos los 8 vértices
+            b0, b1, b2, b3 = (nx0, ny0, 0), (nx1, ny0, 0), (nx1, ny1, 0), (nx0, ny1, 0)
+            t0, t1, t2, t3 = (nx0, ny0, h), (nx1, ny0, h), (nx1, ny1, h), (nx0, ny1, h)
 
-            # Creamos una Polyface Mesh (Malla polifacetada)
-            # Esto evita las líneas diagonales porque AutoCAD lo ve como un solo volumen
-            pface = msp_3d.add_polyface()
-            pface.append_vertices(v)
-            
-            # Definimos las caras (conectando los índices de los puntos)
-            pface.append_face([0, 1, 2, 3]) # Suelo
-            pface.append_face([4, 7, 6, 5]) # Techo
-            pface.append_face([0, 1, 5, 4]) # Pared frontal
-            pface.append_face([1, 2, 6, 5]) # Pared derecha
-            pface.append_face([2, 3, 7, 6]) # Pared trasera
-            pface.append_face([3, 0, 4, 7]) # Pared izquierda
+            # Dibujamos las 6 caras como 3DFACES independientes
+            # Usamos el formato más básico posible para evitar errores de len()
+            msp_3d.add_3dface([b0, b1, b2, b3]) # Suelo
+            msp_3d.add_3dface([t0, t1, t2, t3]) # Techo
+            msp_3d.add_3dface([b0, b1, t1, t0]) # Frontal
+            msp_3d.add_3dface([b1, b2, t2, t1]) # Derecha
+            msp_3d.add_3dface([b2, b3, t3, t2]) # Trasera
+            msp_3d.add_3dface([b3, b0, t0, t3]) # Izquierda
 
-            st.success("¡Cubo sólido generado con éxito!")
+            st.success("¡CUBO GENERADO!")
             out = io.StringIO()
             doc_3d.write(out)
-            st.download_button("📥 DESCARGAR CUBO 4.8", out.getvalue(), "cubo_limpio.dxf")
+            st.download_button("📥 DESCARGAR CUBO 4.9", out.getvalue(), "cubo_arquitectura.dxf")
             
     except Exception as e:
-        st.error(f"Error inesperado: {e}")
-    
+        st.error(f"Error: {e}")
