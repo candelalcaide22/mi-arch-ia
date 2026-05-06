@@ -6,7 +6,7 @@ import io
 # Configuración de página
 st.set_page_config(page_title="ARCH-IA | Studio", page_icon="🏢", layout="wide")
 
-# --- CSS AVANZADO: LIMPIEZA Y ESTÉTICA (INTACTO) ---
+# --- CSS AVANZADO (COLORES DE FUENTE ACTUALIZADOS) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap');
@@ -15,7 +15,15 @@ st.markdown("""
     header[data-testid="stHeader"] * { color: white !important; }
     h1, h2, h3 { font-family: 'Playfair Display', serif !important; color: #2C2C2C !important; }
     .subtitulo-normal { font-family: 'Inter', sans-serif !important; color: #6B6B6B !important; font-size: 1rem; font-style: normal !important; }
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: #4A4A4A !important; }
+    
+    /* Color Verde Sage para el texto de las instrucciones en la Sidebar */
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p, 
+    [data-testid="stSidebar"] .stMarkdown, 
+    [data-testid="stSidebar"] li { 
+        color: #8A9A5B !important; 
+        font-family: 'Inter', sans-serif !important;
+    }
+    
     span[data-testid="stWidgetLabel"] > div > div > p { display: none; } 
     .aria-label, [aria-hidden="true"] { display: none !important; }
     div.stButton > button { background-color: #8A9A5B !important; color: white !important; border-radius: 0px !important; border: none !important; padding: 12px !important; width: 100%; text-transform: uppercase; letter-spacing: 1.5px; }
@@ -25,10 +33,10 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR (INSTRUCCIONES DESARROLLADAS) ---
+# --- SIDEBAR (INSTRUCCIONES CON FUENTE VERDE) ---
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>ARCH-IA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 0.8rem;'>STUDIO EDITION</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 0.8rem; color: #8A9A5B;'>STUDIO EDITION</p>", unsafe_allow_html=True)
     st.write("---")
     
     st.write("### 📖 Protocolo de Trabajo")
@@ -50,8 +58,8 @@ with st.sidebar:
         """)
         
     with st.expander("3. Exportación DXF"):
-        st.info("**Obligatorio:**")
         st.write("""
+        **Obligatorio:**
         Al guardar en AutoCAD, selecciona:
         * **Tipo:** AutoCAD DXF.
         * **Versión:** 2010 o 2013 (son las más estables para conversión de datos).
@@ -68,7 +76,7 @@ with st.sidebar:
     st.write("---")
     st.caption("Soporte: studio@arch-ia.com")
 
-# --- CUERPO PRINCIPAL (SIN CAMBIOS) ---
+# --- CUERPO PRINCIPAL ---
 st.title("The Architectural Conversion Tool")
 st.markdown('<p class="subtitulo-normal">Geometría simplificada para proyectos de arquitectura.</p>', unsafe_allow_html=True)
 st.write("<br>", unsafe_allow_html=True)
@@ -126,4 +134,4 @@ with col2:
             st.error("Error de lectura.")
 
 st.write("<br><br>", unsafe_allow_html=True)
-st.caption("ARCH-IA Studio | v6.4")
+st.caption("ARCH-IA Studio | v6.5")
