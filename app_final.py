@@ -3,71 +3,61 @@ import ezdxf
 from ezdxf import recover
 import io
 
-st.set_page_config(page_title="ARCH-IA 4.0", page_icon="🧊")
-st.title("🧊 ARCH-IA 4.0 - GENERADOR DE CUBOS")
+st.set_page_config(page_title="ARCH-IA 4.4", page_icon="🧊")
+st.title("🧊 ARCH-IA 4.4 - UNIDADES REALES")
 
-# Queremos que el usuario elija la altura
-altura = st.sidebar.slider("Altura del cubo (m)", 1.0, 20.0, 5.0)
+st.info("💡 Consejo: Si dibujas un cuadrado de 10x10 en AutoCAD, pon '10' en el slider para un cubo perfecto.")
 
-uploaded_file = st.file_uploader("Sube tu cuadrado 2D", type=["dxf"])
+# Slider de altura
+altura_deseada = st.sidebar.number_input("Altura en unidades (m)", min_value=0.1, max_value=1000.0, value=5.0)
+
+uploaded_file = st.file_uploader("Sube tu dibujo a escala real", type=["dxf"])
 
 if uploaded_file is not None:
-    with st.spinner('Construyendo sólido...'):
-        try:
-            blob = uploaded_file.read()
-            doc, auditor = recover.read(io.BytesIO(blob))
-            msp = doc.modelspace()
+    try:
+        blob = uploaded_file.read()
+        doc, auditor = recover.read(io.BytesIO(blob))
+        msp = doc.modelspace()
+        
+        puntos = []
+        for e in msp.query('LINE LWPOLYLINE'):
+            if e.dxftype() == 'LINE': puntos.extend([e.dxf.start, e.dxf.end])
+            else: puntos.extend(e.get_points())
+        
+        if puntos:
+            xs, ys = [p[0] for p in puntos], [p[1] for p in puntos]
+            x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
             
-            # Nuevo archivo 3D
+            ancho = x1 - x0
+            largo = y1 - y0
+            st.write(f"📏 Medidas detectadas en AutoCAD: **{ancho:.2f} x {largo:.2f}** unidades.")
+
             doc_3d = ezdxf.new('R2010')
             msp_3d = doc_3d.modelspace()
             
-            # 1. Encontrar los límites de tu cuadrado (Min y Max)
-            todos_los_puntos = []
-            for e in msp.query('LINE LWPOLYLINE'):
-                if e.dxftype() == 'LINE':
-                    todos_los_puntos.extend([e.dxf.start, e.dxf.end])
-                else:
-                    todos_los_puntos.extend(e.get_points())
+            h = altura_deseada
+            # Vértices (Base Z=0, Techo Z=h)
+            b = [(x0,y0,0), (x1,y0,0), (x1,y1,0), (x0,y1,0)]
+            t = [(x0,y0,h), (x1,y0,h), (x1,y1,h), (x0,y1,h)]
+
+            # Crear el sólido (6 caras)
+            caras = [
+                [b[0], b[1], b[2], b[3]], # Suelo
+                [t[0], t[1], t[2], t[3]], # Techo
+                [b[0], b[1], t[1], t[2]], # Pared 1
+                [b[1], b[2], t[2], t[3]], # Pared 2
+                [b[2], b[3], t[3], t[0]], # Pared 3
+                [b[3], b[0], t[0], t[1]]  # Pared 4
+            ]
             
-            if todos_los_puntos:
-                xs = [p[0] for p in todos_los_puntos]
-                ys = [p[1] for p in todos_los_puntos]
-                xmin, xmax = min(xs), max(xs)
-                ymin, ymax = min(ys), max(ys)
+            for vertices in caras:
+                msp_3d.add_3dface(vertices, dxfattribs={'color': 7})
 
-                # 2. Definir los 8 vértices del cubo
-                # Base (Z=0)
-                v0 = (xmin, ymin, 0)
-                v1 = (xmax, ymin, 0)
-                v2 = (xmax, ymax, 0)
-                v3 = (xmin, ymax, 0)
-                # Techo (Z=altura)
-                v4 = (xmin, ymin, altura)
-                v5 = (xmax, ymin, altura)
-                v6 = (xmax, ymax, altura)
-                v7 = (xmin, ymax, altura)
-
-                # 3. Crear las 6 caras del cubo (esto lo hace sólido)
-                # Paredes laterales
-                msp_3d.add_3dface([v0, v1, v5, v4]) # Frontal
-                msp_3d.add_3dface([v1, v2, v6, v5]) # Derecha
-                msp_3d.add_3dface([v2, v3, v7, v6]) # Trasera
-                msp_3d.add_3dface([v3, v0, v4, v7]) # Izquierda
-                # Tapas
-                msp_3d.add_3dface([v0, v1, v2, v3]) # Suelo
-                msp_3d.add_3dface([v4, v5, v6, v7]) # Techo
-
-                st.success("¡CUBO 3D CREADO!")
-                
-                out = io.StringIO()
-                doc_3d.write(out)
-                st.download_button("📥 DESCARGAR CUBO", out.getvalue(), "cubo_3d.dxf")
-            else:
-                st.error("No detecto el cuadrado en tu archivo.")
-
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-st.divider()
-st.caption("v4.0 | Generación de prisma rectangular cerrado.")
+            st.success(f"¡Cubo de {h} unidades de alto creado!")
+            out = io.StringIO()
+            doc_3d.write(out)
+            st.download_button("📥 DESCARGAR 3D REAL", out.getvalue(), "modelo_escala_real.dxf")
+            
+    except Exception as e:
+        st.error(f"Error técnico: {e}")
+    
